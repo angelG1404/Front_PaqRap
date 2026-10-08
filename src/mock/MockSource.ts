@@ -184,9 +184,10 @@ export class MockSource implements SnapshotSource {
     }
     this.assignOrders()
     this.updateMetrics()
-    if (this.escenario === '5D' && this.minutes >= MOCK_CONFIG.inicioSimuladoMinutos + HORIZONTE_5D.horas * 60) this.finish('FINALIZADO')
-    if (this.escenario === 'COLAPSO' && this.ticks >= MOCK_CONFIG.colapsoMinTicks && this.snapshot.metricas.atrasados / this.snapshot.metricas.pedidosTotal >= MOCK_CONFIG.colapsoFraccionAtrasados) {
-      this.snapshot.causa = `Saturación logística: ${this.snapshot.metricas.atrasados} pedidos fuera de plazo.`
+    const finTicks = Number(import.meta.env.VITE_MOCK_FIN_TICKS ?? 90)
+    if (this.escenario === '5D' && (this.ticks >= finTicks || this.minutes >= MOCK_CONFIG.inicioSimuladoMinutos + HORIZONTE_5D.horas * 60)) this.finish('FINALIZADO')
+    if (this.escenario === 'COLAPSO' && (this.ticks >= finTicks || (this.ticks >= MOCK_CONFIG.colapsoMinTicks && this.snapshot.metricas.atrasados / this.snapshot.metricas.pedidosTotal >= MOCK_CONFIG.colapsoFraccionAtrasados))) {
+      if (!this.snapshot.causa) this.snapshot.causa = `Saturación logística: ${this.snapshot.metricas.atrasados} pedidos fuera de plazo.`
       this.finish('COLAPSADO')
     }
   }
