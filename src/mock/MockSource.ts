@@ -3,6 +3,8 @@ import type { SnapshotSource } from '../services/snapshotSource'
 import { formatSimTime, localIso, parseSimTime } from '../services/simulationTime'
 import type { ParametrosCorrida } from '../types'
 import type { PedidoSnap, Semaforo, Snapshot, TipoVehiculo, VehiculoSnap } from '../types/snapshot'
+import type { NuevoPedido, PedidoRegistrado } from '../types/pedidos'
+import { validarNuevoPedido } from '../services/validarNuevoPedido'
 
 export function rutaOrtogonal(x: number, y: number, toX: number, toY: number): [number, number][] {
   const ruta: [number, number][] = [[x, y]]
@@ -30,6 +32,7 @@ export class MockSource implements SnapshotSource {
   private deliveredHistory = 0
   private lateHistory = 0
   private snapshot!: Snapshot
+  private onSnapshot: ((snapshot: Snapshot) => void) | null = null
   private readonly escenario: Snapshot['escenario']
   private readonly options: Pick<ParametrosCorrida, 'fechaInicio' | 'umbralesSemaforo'> | undefined
 
@@ -41,6 +44,7 @@ export class MockSource implements SnapshotSource {
   start(onSnapshot: (snapshot: Snapshot) => void): void {
     this.stop()
     this.reset()
+    this.onSnapshot = onSnapshot
     onSnapshot(structuredClone(this.snapshot))
     this.timer = setInterval(() => {
       this.advance()
@@ -49,7 +53,28 @@ export class MockSource implements SnapshotSource {
     }, MOCK_CONFIG.tickMs)
   }
 
-  stop(): void { if (this.timer !== null) clearInterval(this.timer); this.timer = null }
+  stop(): void { if (this.timer !== null) clearInterval(this.timer); this.timer = null; this.onSnapshot = null }
+
+  registrarPedido(input: NuevoPedido): PedidoRegistrado {
+    const error = validarNuevoPedido(input)
+    if (error) throw new Error(error)
+    if (this.escenario !== 'DIARIO' || !this.onSnapshot) throw new Error('La operación diaria no está activa. Abre Operación Diaria e intenta de nuevo.')
+    const ahora = Date.now()
+    this.minutes = (ahora - this.startedAt) / 60000
+    const id = `ORD-${String(++this.nextOrder).padStart(3, '0')}`
+    const clienteId = input.clienteId.trim()
+    this.snapshot.pedidos.push({
+      id, clienteId, x: input.x, y: input.y, cantidad: input.cantidad,
+      registradoEn: formatSimTime(this.minutes), deadline: formatSimTime(this.minutes + input.horizonteHoras * 60),
+      estado: 'PENDIENTE', vehiculoId: null, semaforo: 'VERDE',
+    })
+    this.updateMetrics()
+    this.onSnapshot(structuredClone(this.snapshot))
+    return {
+      id, clienteId, x: input.x, y: input.y, cantidad: input.cantidad,
+      registradoEn: localIso(new Date(ahora)), deadline: localIso(new Date(ahora + input.horizonteHoras * 3600000)), estado: 'PENDIENTE',
+    }
+  }
 
   private reset(): void {
     this.ticks = 0; this.minutes = this.escenario === 'DIARIO' ? 0 : MOCK_CONFIG.inicioSimuladoMinutos; this.nextOrder = 0; this.costo = 0
@@ -96,11 +121,11 @@ export class MockSource implements SnapshotSource {
   private assignOrders(initial = false): void {
     const pending = this.snapshot.pedidos.filter((pedido) => pedido.estado === 'PENDIENTE')
     for (const vehicle of this.snapshot.vehiculos) {
-      if (vehicle.estado !== 'LIBRE') continue
-      const pedido = pending.shift()
-      if (!pedido) break
+      if (vehicle.estado !== 'LIBRE' || vehicle.proximaParada) continue
       const stock = this.snapshot.almacenes.find((a) => a.id === vehicle.almacenBase)!
-      if (stock.stock !== null && stock.stock < pedido.cantidad) continue
+      const index = pending.findIndex((p) => p.cantidad <= vehicle.capacidad && (stock.stock === null || stock.stock >= p.cantidad))
+      if (index < 0) continue
+      const [pedido] = pending.splice(index, 1)
       if (stock.stock !== null) stock.stock -= pedido.cantidad
       pedido.vehiculoId = vehicle.id
       pedido.estado = initial && pending.length < MOCK_CONFIG.pedidosPlanificadosIniciales ? 'PLANIFICADO' : 'EN_RUTA'

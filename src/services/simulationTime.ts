@@ -17,3 +17,11 @@ export function localIso(date: Date): string {
 export function formatDuration(seconds: number): string {
   return [Math.floor(seconds / 3600), Math.floor(seconds % 3600 / 60), seconds % 60].map((part) => String(part).padStart(2, '0')).join(':')
 }
+
+export function formatFechaHora(iso?: string): string {
+  if (!iso) return 'Esperando hora…'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return 'Fecha no disponible'
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+}

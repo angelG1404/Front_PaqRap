@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test:map": "node scripts/test-map.mjs",
+    "test:daily": "node scripts/test-daily.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

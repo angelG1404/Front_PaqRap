@@ -29,6 +29,7 @@ export function ParametersPage() {
     <div className="top-grid"><OrdersUpload />
       <Card title="Configuración de la Corrida" subtitle="Parámetros técnicos y asignación" icon="settings" tone="orange">
         <fieldset><legend className="field-label">MODO DE SIMULACIÓN</legend><div className="mode-options">{MODOS.map((mode) => <label key={mode.id} className={`mode-option ${draft.escenario === mode.id ? 'selected' : ''}`}><div><strong>{mode.nombre}</strong><input type="radio" name="escenario" value={mode.id} checked={draft.escenario === mode.id} onChange={() => setDraft({ ...draft, escenario: mode.id })} /></div><p>{mode.descripcion}</p></label>)}</div></fieldset>
+
         <label className="field-label mt-3" htmlFor="algoritmo">ALGORITMO</label><select id="algoritmo" value={draft.algoritmo} onChange={(e) => setDraft({ ...draft, algoritmo: e.target.value as ParametrosCorrida['algoritmo'] })}>{ALGORITMOS.map((algoritmo) => <option key={algoritmo}>{algoritmo}</option>)}</select>
         <label className="field-label mt-3" htmlFor="fecha">FECHA Y HORA DE INICIO</label><input id="fecha" type="datetime-local" required value={draft.fechaInicio} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} />
         <div className="horizon"><span>HORIZONTE ESTIMADO</span><strong>{draft.escenario === '5D' ? `${HORIZONTE_5D.dias} días simulados (${HORIZONTE_5D.horas} h)` : 'Hasta el colapso'}</strong></div>

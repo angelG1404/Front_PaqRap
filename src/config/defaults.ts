@@ -4,6 +4,7 @@ import { COLORES_TIPO } from './theme'
 export const GRID_ANCHO = 70
 export const GRID_ALTO = 50
 export const HORIZONTES_VALIDOS = [4, 8, 12, 18, 36] as const
+export const REGISTRO_PEDIDOS = { horizonteRegular: 36, cantidadInicial: 1, ultimosVisibles: 5 } as const
 export const HORIZONTE_5D = { dias: 5, horas: 120 }
 export const PORCENTAJE_MAXIMO = 100
 export const UMBRALES_SEMAFORO = { verdeMinPct: 60, ambarMinPct: 30 }

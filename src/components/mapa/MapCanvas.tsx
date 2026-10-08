@@ -6,16 +6,24 @@ import { movementPath, pointOnPath, project, unproject, type Point, type Viewpor
 
 export interface MapCanvasHandle { center: (x: number, y: number) => void; zoom: (factor: number) => void; reset: () => void }
 interface Motion { path: Point[]; start: number; duration: number; changedAt: number; vehicle: VehiculoSnap }
-interface Props { snapshot: Snapshot; selectedId: string | null; onSelect: (id: string | null) => void; ref?: Ref<MapCanvasHandle> }
-export function MapCanvas({ snapshot, selectedId, onSelect, ref }: Props) {
+interface Props {
+  snapshot: Snapshot; selectedId: string | null; onSelect: (id: string | null) => void; ref?: Ref<MapCanvasHandle>
+  seleccionandoPunto?: boolean
+  onElegirPunto?: (x: number, y: number) => void
+  onCancelarSeleccion?: () => void
+  puntoElegido?: { x: number; y: number } | null
+}
+export function MapCanvas({ snapshot, selectedId, onSelect, ref, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null)
-  const scene = useRef({ snapshot, selectedId, onSelect })
+  const scene = useRef({ snapshot, selectedId, onSelect, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido })
   const motions = useRef(new Map<string, Motion>())
   const view = useRef<Viewport>({ width: 0, height: 0, scale: 1, offsetX: 0, offsetY: 0 })
   const zoom = useRef(1)
   const focus = useRef<Point>([GRID_ANCHO / 2, GRID_ALTO / 2])
   const fit = useRef(1)
   const hits = useRef<{ id: string; screen: Point }[]>([])
+
+  useEffect(() => { if (seleccionandoPunto) canvas.current?.focus() }, [seleccionandoPunto])
 
   const placeView = useCallback(() => {
     const v = view.current
@@ -53,8 +61,8 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref }: Props) {
       } else next.set(vehicle.id, { ...previous, vehicle })
     }
     motions.current = next
-    scene.current = { snapshot, selectedId, onSelect }
-  }, [snapshot, selectedId, onSelect])
+    scene.current = { snapshot, selectedId, onSelect, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido }
+  }, [snapshot, selectedId, onSelect, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido])
 
   useEffect(() => {
     const element = canvas.current!
@@ -141,6 +149,13 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref }: Props) {
         vehicleIcon(motion.vehicle, ...screen, motion.vehicle.id === scene.current.selectedId)
         hits.current.push({ id: motion.vehicle.id, screen })
       }
+      const picked = scene.current.puntoElegido
+      if (picked) {
+        const [x, y] = project([picked.x, picked.y], v)
+        ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(x - 14, y); ctx.lineTo(x + 14, y); ctx.moveTo(x, y - 14); ctx.lineTo(x, y + 14); ctx.stroke()
+        label(`Nuevo pedido (${picked.x}, ${picked.y})`, x, y - 22, '#eff6ff')
+      }
       frame = requestAnimationFrame(draw)
     }
     function point(event: MouseEvent): Point { const rect = element.getBoundingClientRect(); return [event.clientX - rect.left, event.clientY - rect.top] }
@@ -160,15 +175,23 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref }: Props) {
       if (!pointer) return
       if (!pointer.dragged) {
         const [x, y] = point(event)
-        const hit = [...hits.current].reverse().find(({ screen }) => Math.hypot(screen[0] - x, screen[1] - y) <= 16)
-        scene.current.onSelect(hit?.id ?? null)
+        if (scene.current.seleccionandoPunto) choosePoint([x, y])
+        else {
+          const hit = [...hits.current].reverse().find(({ screen }) => Math.hypot(screen[0] - x, screen[1] - y) <= 16)
+          scene.current.onSelect(hit?.id ?? null)
+        }
       }
       pointer = null
       if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId)
     }
     function cancel() { pointer = null }
+    function choosePoint(screen: Point) {
+      const [x, y] = unproject(screen, view.current)
+      scene.current.onElegirPunto?.(Math.max(0, Math.min(GRID_ANCHO, Math.round(x))), Math.max(0, Math.min(GRID_ALTO, Math.round(y))))
+    }
     function key(event: KeyboardEvent) {
-      if (event.key === 'Escape') scene.current.onSelect(null)
+      if (event.key === 'Escape') { scene.current.onSelect(null); scene.current.onCancelarSeleccion?.() }
+      else if (event.key === 'Enter' && scene.current.seleccionandoPunto) { event.preventDefault(); choosePoint([view.current.width / 2, view.current.height / 2]) }
       else if (event.key === '+' || event.key === '=') zoomAt(1.25)
       else if (event.key === '-') zoomAt(0.8)
       else if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) {
@@ -180,5 +203,5 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref }: Props) {
     frame = requestAnimationFrame(draw)
     return () => { cancelAnimationFrame(frame); observer.disconnect(); window.removeEventListener('resize', resize); element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', move); element.removeEventListener('pointerup', up); element.removeEventListener('pointercancel', cancel); element.removeEventListener('keydown', key) }
   }, [placeView, zoomAt])
-  return <canvas ref={canvas} className="logistics-canvas" tabIndex={0} aria-label="Mapa logístico interactivo. Selecciona unidades en el mapa o en la lista. Arrastra para desplazar; usa la rueda o las teclas más y menos para ampliar." />
+  return <canvas ref={canvas} className={`logistics-canvas ${seleccionandoPunto ? 'picking-point' : ''}`} tabIndex={0} aria-label={seleccionandoPunto ? 'Elegir coordenadas: haz clic en el mapa o pulsa Enter para elegir el centro; Escape para cancelar.' : 'Mapa logístico interactivo. Selecciona unidades en el mapa o en la lista. Arrastra para desplazar; usa la rueda o las teclas más y menos para ampliar.'} />
 }

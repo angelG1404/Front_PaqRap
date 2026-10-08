@@ -1,20 +1,5 @@
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
-import path from 'node:path'
-import ts from 'typescript'
-
-// Carga los módulos TS puros sin añadir dependencias de pruebas al frontend.
-const cache = new Map()
-function moduleUrl(file) {
-  const absolute = path.resolve(file)
-  if (cache.has(absolute)) return cache.get(absolute)
-  const code = ts.transpileModule(fs.readFileSync(absolute, 'utf8'), {
-    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2023 },
-  }).outputText.replace(/from ['"](\.[^'"]+)['"]/g, (_, specifier) => `from '${moduleUrl(path.resolve(path.dirname(absolute), specifier + '.ts'))}'`)
-  const url = 'data:text/javascript;base64,' + Buffer.from(code).toString('base64')
-  cache.set(absolute, url)
-  return url
-}
+import { moduleUrl } from './load-ts-module.mjs'
 const { MockSource, rutaOrtogonal, semaforoPedido } = await import(moduleUrl('src/mock/MockSource.ts'))
 const { pointOnPath, movementPath, project, unproject } = await import(moduleUrl('src/components/mapa/geometry.ts'))
 const { MOCK_CONFIG, HORIZONTE_5D, FLOTA, GRID_ANCHO, GRID_ALTO } = await import(moduleUrl('src/config/defaults.ts'))
