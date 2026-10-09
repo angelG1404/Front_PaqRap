@@ -1,3 +1,14 @@
+Para levantarlos ahora mismo:
+
+   1. Terminal 1 (Backend):
+   1    cd back
+   2    mvn spring-boot:run
+
+   2. Terminal 2 (Frontend):
+
+   1    cd front
+   2    npm run dev
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
