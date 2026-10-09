@@ -1,13 +1,19 @@
-Para levantarlos ahora mismo:
+### 🚀 Cómo ejecutar el proyecto localmente
 
-   1. Terminal 1 (Backend):
-   1    cd back
-   2    mvn spring-boot:run
+Para levantar la aplicación ahora mismo, abre **dos terminales diferentes** y ejecuta los siguientes comandos:
 
-   2. Terminal 2 (Frontend):
+#### 1. Terminal 1 (Backend)
+```bash
+cd back
+mvn spring-boot:run
+```
 
-   1    cd front
-   2    npm run dev
+#### 2. Terminal 2 (Frontend)
+```bash
+cd front
+npm run dev
+```
+
 
 # React + TypeScript + Vite
 
