@@ -16,6 +16,8 @@
     <description>PaqRap Logistics Engine Backend (Spring Boot + WebSocket + ALNS)</description>
     <properties>
         <java.version>17</java.version>
+        <!-- Main.java es el ejecutable de consola del algoritmo; el servidor arranca desde PaqrapApplication. -->
+        <start-class>com.paqrap.PaqrapApplication</start-class>
     </properties>
     <dependencies>
         <dependency>

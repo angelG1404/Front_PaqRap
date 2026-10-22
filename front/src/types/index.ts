@@ -34,12 +34,15 @@ export interface ArchivoSubido {
 export interface EscenarioActivoInfo {
   runId: string
   escenario: '5D' | 'COLAPSO' | 'DIARIO'
-  estado: 'EN_CURSO' | 'FINALIZADO' | 'COLAPSADO'
+  estado: 'EN_CURSO' | 'FINALIZADO' | 'COLAPSADO' | 'DETENIDA'
   topic: string
 }
 export interface EstadoSimulacion {
   parametros: ParametrosCorrida
   archivoPedidos: File | null
   infoArchivoPedidos: ArchivoPedidosInfo | null
+  /** Opcional: bloqueos viales de la simulación (totalPedidos = bloqueos válidos). */
+  archivoBloqueos: File | null
+  infoArchivoBloqueos: ArchivoPedidosInfo | null
   runIds: { DIARIO?: string; '5D'?: string; COLAPSO?: string }
 }

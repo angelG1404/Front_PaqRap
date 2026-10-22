@@ -35,7 +35,7 @@ export function Layout() {
     }
   }, [pathname])
 
-  const hasDaily = activeRuns.some((r) => r.escenario === 'DIARIO' && r.estado === 'EN_CURSO') || true
+  const hasDaily = activeRuns.some((r) => r.escenario === 'DIARIO' && r.estado === 'EN_CURSO')
   const hasSimulation = activeRuns.some((r) => (r.escenario === '5D' || r.escenario === 'COLAPSO') && r.estado === 'EN_CURSO')
 
   return <div className="app-shell">

@@ -145,7 +145,10 @@ public class Route {
 
     public Route cloneRoute() {
         Vehicle clonedVehicle = new Vehicle(this.vehicle.getId(), this.vehicle.getType(), this.vehicle.getStartDepot());
-        return new Route(clonedVehicle, this.depot, this.startTimeHours, new ArrayList<>(this.orders));
+        Route copy = new Route(clonedVehicle, this.depot, this.startTimeHours, new ArrayList<>(this.orders));
+        // Los bloqueos son parte del escenario: las copias de la metaheurística deben seguir viéndolos.
+        copy.roadblocks = this.roadblocks;
+        return copy;
     }
 
     @Override

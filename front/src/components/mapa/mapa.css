@@ -87,3 +87,21 @@
   .collapse-panel { bottom: 354px; }
   .map-operations { min-height: 225px; }
 }
+/* Leyenda ampliada: bloqueos, averías, pedidos y capas visibles */
+.legend-symbol.blocked { border-radius: 3px; width: 23px; height: 7px; background: repeating-linear-gradient(90deg, #d62839 0 6px, #ffffff 6px 9px); border: 2px solid #d62839; }
+.legend-pin { width: 12px; height: 12px; margin: 0 6px 0 5px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #10b981; border: 2px solid white; box-shadow: 0 0 0 1px #10b981; flex-shrink: 0; }
+.legend-pin.pending { background: white; border-color: #10b981; box-shadow: none; }
+.legend-symbol { font-weight: 800; font-size: 12px; }
+.layer-toggles { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.layer-toggles label { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid #cfd8e5; border-radius: 12px; background: white; color: #7b8aa0; font-size: 9px; cursor: pointer; user-select: none; }
+.layer-toggles label.on { color: #173a5a; border-color: #8fb0d6; background: #eaf2fc; font-weight: 600; }
+.layer-toggles input { width: 11px; height: 11px; margin: 0; accent-color: #203c62; }
+.entity-row.broken { border-color: #f3b4bd; background: #fff6f7; }
+.unit-state > span.broken { background: #fde3e6; color: #b3192d; font-weight: 600; }
+.unit-breakdown { margin: -4px 0 8px; padding: 7px 9px; border: 1px solid #f5bcc4; border-radius: 5px; background: #fff3f5; color: #a3182b; font-size: 10px; line-height: 1.5; }
+.unit-eta { font: 600 10px Consolas, monospace; background: #0b2f55; color: white; padding: 3px 6px; border-radius: 3px; white-space: nowrap; }
+.map-help { max-width: calc(100% - 140px); overflow: hidden; text-overflow: ellipsis; }
+.stop-button { display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; border: 0; border-radius: 6px; background: #c81e33; color: white; font-size: 12px; font-weight: 650; box-shadow: 0 2px 5px #c81e3333; }
+.stop-button:hover { background: #a9182a; }.stop-button:disabled { opacity: .6; }
+.clock-pill.speed time { color: #4531a8; }
+.clock-pill.metrics time { margin-right: 6px; }.clock-pill.metrics time.late { color: #c81e33; }

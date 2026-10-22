@@ -6,6 +6,7 @@ public class ParametrosCorridaDto {
     private String algoritmo;
     private String fechaInicio;
     private String archivoPedidosId;
+    private String archivoBloqueosId;
     private Map<String, Integer> flota;
     private Map<String, Double> umbralesSemaforo;
 
@@ -19,6 +20,9 @@ public class ParametrosCorridaDto {
 
     public String getArchivoPedidosId() { return archivoPedidosId; }
     public void setArchivoPedidosId(String archivoPedidosId) { this.archivoPedidosId = archivoPedidosId; }
+
+    public String getArchivoBloqueosId() { return archivoBloqueosId; }
+    public void setArchivoBloqueosId(String archivoBloqueosId) { this.archivoBloqueosId = archivoBloqueosId; }
 
     public Map<String, Integer> getFlota() { return flota; }
     public void setFlota(Map<String, Integer> flota) { this.flota = flota; }

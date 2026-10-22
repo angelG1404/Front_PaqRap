@@ -5,11 +5,11 @@ import { useSimulation } from '../context/SimulationContext'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
 import { OrdersUpload } from '../components/OrdersUpload'
-import { iniciarEscenario, subirArchivoPedidos, ApiError } from '../services/api'
+import { getEscenariosActivos, iniciarEscenario, subirArchivoBloqueos, subirArchivoPedidos, ApiError } from '../services/api'
 import type { EscenarioActivoInfo, ParametrosCorrida } from '../types'
 
 export function ParametersPage() {
-  const { parametros, setParametros, archivoPedidos, infoArchivoPedidos, runIds, setRunId } = useSimulation()
+  const { parametros, setParametros, archivoPedidos, infoArchivoPedidos, archivoBloqueos, infoArchivoBloqueos, setRunId } = useSimulation()
   const [draft, setDraft] = useState<ParametrosCorrida>(() => structuredClone(parametros))
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
@@ -20,7 +20,8 @@ export function ParametersPage() {
   const total = Object.values(draft.flota).reduce((sum, count) => sum + count, 0)
   const thresholdsValid = Number.isFinite(verdeMinPct) && Number.isFinite(ambarMinPct) && ambarMinPct >= 0 && verdeMinPct <= PORCENTAJE_MAXIMO && ambarMinPct < verdeMinPct
   const fleetValid = Object.values(draft.flota).every((n) => Number.isSafeInteger(n) && n >= 0) && total > 0
-  const canStart = (draft.escenario === 'DIARIO' || !!archivoPedidos) && (draft.escenario === 'DIARIO' || !!infoArchivoPedidos?.valido) && thresholdsValid && fleetValid && !!draft.fechaInicio
+  const bloqueosValidos = !archivoBloqueos || !!infoArchivoBloqueos?.valido
+  const canStart = (draft.escenario === 'DIARIO' || !!archivoPedidos) && (draft.escenario === 'DIARIO' || !!infoArchivoPedidos?.valido) && bloqueosValidos && thresholdsValid && fleetValid && !!draft.fechaInicio
 
   function threshold(key: 'verdeMinPct' | 'ambarMinPct', value: number) {
     setDraft((prev) => ({ ...prev, umbralesSemaforo: { ...prev.umbralesSemaforo, [key]: value } }))
@@ -44,10 +45,21 @@ export function ParametersPage() {
         }
         archivoPedidosId = subida.archivoId
       }
+      let archivoBloqueosId: string | undefined = undefined
+      if (draft.escenario !== 'DIARIO' && archivoBloqueos) {
+        const subida = await subirArchivoBloqueos(archivoBloqueos)
+        if (subida.errores.length > 0) {
+          setErrorMsg(`El archivo de bloqueos contiene errores reportados por el backend en las líneas: ${subida.errores.map(e => e.linea).join(', ')}`)
+          setLoading(false)
+          return
+        }
+        archivoBloqueosId = subida.archivoId
+      }
 
       const res = await iniciarEscenario(draft.escenario, {
         ...draft,
         archivoPedidosId,
+        archivoBloqueosId,
       })
 
       setRunId(draft.escenario, res.runId)
@@ -55,13 +67,9 @@ export function ParametersPage() {
       navigate('/simulacion/mapa')
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setConflictRun({
-          runId: runIds[draft.escenario] || 'active-run',
-          escenario: draft.escenario,
-          estado: 'EN_CURSO',
-          topic: '',
-        })
-        setErrorMsg(`Ya hay una simulación ${draft.escenario} en curso.`)
+        const activa = (await getEscenariosActivos()).find((r) => r.escenario === draft.escenario)
+        if (activa) setConflictRun(activa)
+        setErrorMsg(`Ya hay una simulación ${draft.escenario} en curso. Puedes verla o detenerla desde el mapa.`)
       } else {
         setErrorMsg(err instanceof Error ? err.message : 'Error al iniciar corrida.')
       }
@@ -81,10 +89,10 @@ export function ParametersPage() {
 
     <div className="top-grid"><OrdersUpload />
       <Card title="Configuración de la Corrida" subtitle="Parámetros técnicos y asignación" icon="settings" tone="orange">
-        <fieldset><legend className="field-label">MODO DE SIMULACIÓN</legend><div className="mode-options">{MODOS.map((mode) => <label key={mode.id} className={`mode-option ${draft.escenario === mode.id ? 'selected' : ''}`}><div><strong>{mode.nombre}</strong><input type="radio" name="escenario" value={mode.id} checked={draft.escenario === mode.id} onChange={() => setDraft({ ...draft, escenario: mode.id as any })} /></div><p>{mode.descripcion}</p></label>)}</div></fieldset>
+        <fieldset><legend className="field-label">MODO DE SIMULACIÓN</legend><div className="mode-options">{MODOS.map((mode) => <label key={mode.id} className={`mode-option ${draft.escenario === mode.id ? 'selected' : ''}`}><div><strong>{mode.nombre}</strong><input type="radio" name="escenario" value={mode.id} checked={draft.escenario === mode.id} onChange={() => setDraft({ ...draft, escenario: mode.id })} /></div><p>{mode.descripcion}</p></label>)}</div></fieldset>
 
         <label className="field-label mt-3" htmlFor="algoritmo">ALGORITMO</label><select id="algoritmo" value={draft.algoritmo} onChange={(e) => setDraft({ ...draft, algoritmo: e.target.value as ParametrosCorrida['algoritmo'] })}>{ALGORITMOS.map((algoritmo) => <option key={algoritmo}>{algoritmo}</option>)}</select>
-        <label className="field-label mt-3" htmlFor="fecha">FECHA Y HORA DE INICIO</label><input id="fecha" type="datetime-local" required value={draft.fechaInicio} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} />
+        <label className="field-label mt-3" htmlFor="fecha">FECHA DE INICIO</label><input id="fecha" type="date" required value={draft.fechaInicio.slice(0, 10)} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} /><p className="date-hint">El día 01 del archivo de pedidos corresponde a las 00:00 de esta fecha.</p>
         <div className="horizon"><span>HORIZONTE ESTIMADO</span><strong>{draft.escenario === '5D' ? `${HORIZONTE_5D.dias} días simulados (${HORIZONTE_5D.horas} h)` : draft.escenario === 'COLAPSO' ? 'Hasta el colapso' : 'Continuo'}</strong></div>
       </Card>
     </div>

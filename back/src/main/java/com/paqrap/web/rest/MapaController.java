@@ -14,6 +14,6 @@ public class MapaController {
 
     @GetMapping("/base")
     public ResponseEntity<Map<String, Object>> getMapaBase() {
-        return ResponseEntity.ok(ScenarioDefaults.MAPA_BASE);
+        return ResponseEntity.ok(ScenarioDefaults.mapaBase());
     }
 }

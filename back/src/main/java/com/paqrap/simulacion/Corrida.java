@@ -1,73 +1,49 @@
 package com.paqrap.simulacion;
 
-import com.paqrap.model.*;
-import com.paqrap.web.dto.ParametrosCorridaDto;
-
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 
+/** Una ejecución de un escenario: su motor, su reloj, su topic WebSocket y su tarea periódica. */
 public class Corrida {
-    private String runId;
-    private String escenario;
-    private String estado;
-    private String topic;
-    private SimulationClock clock;
-    private LocalDateTime baseRealTime;
-    private List<Vehicle> vehicles;
-    private List<Order> allOrders;
-    private List<Order> activeOrders;
-    private List<Warehouse> warehouses;
-    private ParametrosCorridaDto params;
-    private ScheduledFuture<?> task;
-    private String causa;
-    private Solution lastSolution;
-    private double totalCost = 0.0;
 
-    public Corrida() {}
+    private final String runId;
+    private final String escenario;
+    private final String topic;
+    private final SimulationEngine motor;
+    private final SimulationClock reloj;
+    private final long inicioRealMs = System.currentTimeMillis();
+    private volatile long finRealMs;
+    private ScheduledFuture<?> tarea;
+
+    public Corrida(String runId, String escenario, SimulationEngine motor, SimulationClock reloj) {
+        this.runId = runId;
+        this.escenario = escenario;
+        this.topic = "/topic/sim/" + runId;
+        this.motor = motor;
+        this.reloj = reloj;
+    }
 
     public String getRunId() { return runId; }
-    public void setRunId(String runId) { this.runId = runId; }
 
     public String getEscenario() { return escenario; }
-    public void setEscenario(String escenario) { this.escenario = escenario; }
-
-    public String getEstado() { return estado; }
-    public void setEstado(String estado) { this.estado = estado; }
 
     public String getTopic() { return topic; }
-    public void setTopic(String topic) { this.topic = topic; }
 
-    public SimulationClock getClock() { return clock; }
-    public void setClock(SimulationClock clock) { this.clock = clock; }
+    public SimulationEngine getMotor() { return motor; }
 
-    public LocalDateTime getBaseRealTime() { return baseRealTime; }
-    public void setBaseRealTime(LocalDateTime baseRealTime) { this.baseRealTime = baseRealTime; }
+    public SimulationClock getReloj() { return reloj; }
 
-    public List<Vehicle> getVehicles() { return vehicles; }
-    public void setVehicles(List<Vehicle> vehicles) { this.vehicles = vehicles; }
+    public String getEstado() { return motor.getEstado(); }
 
-    public List<Order> getAllOrders() { return allOrders; }
-    public void setAllOrders(List<Order> allOrders) { this.allOrders = allOrders; }
+    public ScheduledFuture<?> getTarea() { return tarea; }
 
-    public List<Order> getActiveOrders() { return activeOrders; }
-    public void setActiveOrders(List<Order> activeOrders) { this.activeOrders = activeOrders; }
+    public void setTarea(ScheduledFuture<?> tarea) { this.tarea = tarea; }
 
-    public List<Warehouse> getWarehouses() { return warehouses; }
-    public void setWarehouses(List<Warehouse> warehouses) { this.warehouses = warehouses; }
+    public void marcarFin() {
+        if (finRealMs == 0) finRealMs = System.currentTimeMillis();
+    }
 
-    public ParametrosCorridaDto getParams() { return params; }
-    public void setParams(ParametrosCorridaDto params) { this.params = params; }
-
-    public ScheduledFuture<?> getTask() { return task; }
-    public void setTask(ScheduledFuture<?> task) { this.task = task; }
-
-    public String getCausa() { return causa; }
-    public void setCausa(String causa) { this.causa = causa; }
-
-    public Solution getLastSolution() { return lastSolution; }
-    public void setLastSolution(Solution lastSolution) { this.lastSolution = lastSolution; }
-
-    public double getTotalCost() { return totalCost; }
-    public void setTotalCost(double totalCost) { this.totalCost = totalCost; }
+    public long segundosReales() {
+        long fin = finRealMs == 0 ? System.currentTimeMillis() : finRealMs;
+        return (fin - inicioRealMs) / 1000;
+    }
 }

@@ -31,3 +31,17 @@
 @media (max-width: 1150px) { .daily-header { flex-wrap: wrap; gap: 14px; padding: 15px 18px; }.daily-heading { flex-basis: 100%; }.daily-header .fleet-counters { margin-left: auto; }.daily-page .live-map { --panel-width: 315px; } }
 @media (max-width: 850px) { .daily-page .live-map { --panel-width: 290px; }.daily-heading h1 { font-size: 18px; }.map-tabs.three-tabs button { font-size: 9px; } }
 @media (max-width: 700px) { .daily-page .map-side-panel { max-height: 520px; flex: 0 0 520px; }.daily-page .collapse-panel { bottom: 494px; }.daily-page .panel-collapsed .collapse-panel { bottom: 12px; }.daily-page .map-stage { flex-shrink: 0; }.daily-page .live-map { overflow: auto; }.daily-header { gap: 12px; }.daily-page .map-pick-notice { font-size: 10px; }.daily-page .map-tabs.three-tabs button { font-size: 10px; } }
+/* Averías e incidencias */
+.breakdown-form { margin-top: 14px; border-color: #f0c6cc; }
+.register-order-heading > span.incident { background: #fde3e6; color: #b3192d; }
+.breakdown-note { margin: 11px 0; padding: 8px; background: #fff7ed; border: 1px solid #fbd9b0; border-radius: 4px; color: #92521c; font-size: 9px; line-height: 1.5; }
+.register-submit.danger { background: #b81f33; }.register-submit.danger:hover { background: #9c1628; }
+.recent-orders li.breakdown-item { border-color: #f3c3ca; background: #fff7f8; }.recent-orders li.breakdown-item > div span { color: #b3192d; font-weight: 600; }
+.daily-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.upload-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border: 1px solid #b9cbe2; border-radius: 20px; background: #f4f8fd; color: #1f4570; font-size: 10px; cursor: pointer; }
+.upload-pill:hover { background: #e7f0fb; }.upload-pill .icon { width: 13px; height: 13px; }
+.daily-feedback { font-size: 10px; color: #4a6585; }.daily-feedback.error { color: #b3192d; }
+.plan-pill { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; background: #f1effe; border: 1px solid #d9d3fb; color: #4531a8; font-size: 10px; white-space: nowrap; }
+.plan-pill.busy i { animation: plan-pulse 1s infinite; }
+.plan-pill i { width: 6px; height: 6px; border-radius: 50%; background: #6d5ce8; }
+@keyframes plan-pulse { 50% { opacity: .25; } }

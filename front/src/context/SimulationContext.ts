@@ -3,6 +3,7 @@ import type { ArchivoPedidosInfo, EstadoSimulacion, ParametrosCorrida } from '..
 export interface SimulationContextValue extends EstadoSimulacion {
   setParametros: (parametros: ParametrosCorrida) => void
   setArchivo: (file: File | null, info: ArchivoPedidosInfo | null) => void
+  setArchivoBloqueos: (file: File | null, info: ArchivoPedidosInfo | null) => void
   setRunId: (escenario: '5D' | 'COLAPSO' | 'DIARIO', runId: string | undefined) => void
   clearRunId: (escenario: '5D' | 'COLAPSO' | 'DIARIO') => void
 }

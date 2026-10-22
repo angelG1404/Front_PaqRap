@@ -57,12 +57,23 @@ public class AStarGridRouter {
 
         // Pre-calcular nodos bloqueados para el currentTime dado
         Set<String> blockedNodes = new HashSet<>();
+        boolean blockInsideBox = false;
+        int minX = Math.min(startX, endX), maxX = Math.max(startX, endX);
+        int minY = Math.min(startY, endY), maxY = Math.max(startY, endY);
         for (Roadblock rb : roadblocks) {
             if (currentTime >= rb.startTimeHours && currentTime <= rb.endTimeHours) {
                 for (Location loc : rb.path) {
-                    blockedNodes.add((int) Math.round(loc.getX()) + "," + (int) Math.round(loc.getY()));
+                    int bx = (int) Math.round(loc.getX());
+                    int by = (int) Math.round(loc.getY());
+                    blockedNodes.add(bx + "," + by);
+                    if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) blockInsideBox = true;
                 }
             }
+        }
+
+        // Sin bloqueos dentro del rectángulo origen-destino, la distancia Manhattan es alcanzable (atajo exacto).
+        if (!blockInsideBox) {
+            return (maxX - minX) + (maxY - minY);
         }
 
         PriorityQueue<Node> openSet = new PriorityQueue<>();

@@ -1,18 +1,22 @@
 ### 🚀 Cómo ejecutar el proyecto localmente
 
-Para levantar la aplicación ahora mismo, abre **dos terminales diferentes** y ejecuta los siguientes comandos:
+La guía completa (requisitos, configuración, guion de pruebas de los 3 escenarios y problemas frecuentes)
+está en **[GUIA_DE_PRUEBA.md](GUIA_DE_PRUEBA.md)**. Resumen: abre **dos terminales**.
 
-#### 1. Terminal 1 (Backend)
+#### 1. Terminal 1 (Backend · http://localhost:8081)
 ```bash
 cd back
 mvn spring-boot:run
 ```
 
-#### 2. Terminal 2 (Frontend)
+#### 2. Terminal 2 (Frontend · http://localhost:5173)
 ```bash
 cd front
+npm install
 npm run dev
 ```
+
+Archivos de prueba en `data/` (`ventas.txt`, `bloqueo.txt`, `pedidos_colapso.txt`).
 
 
 # React + TypeScript + Vite

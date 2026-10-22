@@ -31,6 +31,7 @@ public class ALNSOptimizer implements RouteOptimizer {
         public double scoreRejected = 0.0; // Sigma 4: Rejected solution
         public boolean verboseLogging = true;
         public long randomSeed = 20260910L;
+        public long maxTimeMs = 0; // Límite de tiempo real por ejecución (0 = sin límite)
     }
 
     public static class OperatorStats {
@@ -143,7 +144,12 @@ public class ALNSOptimizer implements RouteOptimizer {
                 config.maxIterations, temperature, config.coolingRate, config.segmentSize,
                 config.minDestroyRatio * 100.0, config.maxDestroyRatio * 100.0));
 
+        long startMs = System.currentTimeMillis();
         for (int iter = 1; iter <= config.maxIterations; iter++) {
+            if (config.maxTimeMs > 0 && System.currentTimeMillis() - startMs > config.maxTimeMs) {
+                log(String.format("ALNS: límite de tiempo alcanzado en la iteración %d.", iter));
+                break;
+            }
             int minQ = Math.max(1, (int) Math.round(totalOrders * config.minDestroyRatio));
             int maxQ = Math.max(minQ, (int) Math.round(totalOrders * config.maxDestroyRatio));
             maxQ = Math.min(totalOrders, maxQ);

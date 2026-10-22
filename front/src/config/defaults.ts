@@ -38,8 +38,9 @@ export const MODOS = [
 ] as const
 export const ALGORITMOS = ['ALNS', 'ATS'] as const
 export function crearParametrosIniciales(): ParametrosCorrida {
+  // Solo la fecha: el día 01 del archivo de pedidos corresponde a las 00:00 de este día.
   const ahora = new Date()
-  const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+  const local = new Date(ahora.getTime() - ahora.getTimezoneOffset() * 60000).toISOString().slice(0, 10)
   return {
     escenario: '5D', algoritmo: 'ALNS', fechaInicio: local,
     umbralesSemaforo: { ...UMBRALES_SEMAFORO },

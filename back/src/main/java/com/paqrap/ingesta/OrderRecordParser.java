@@ -1,8 +1,12 @@
 package com.paqrap.ingesta;
 
+import com.paqrap.config.ScenarioDefaults;
 import com.paqrap.model.*;
 
+import java.util.Set;
+
 public class OrderRecordParser implements CsvRecordParser<Order> {
+    private static final Set<Integer> HORIZONTES_VALIDOS = Set.of(4, 8, 12, 18, 36);
     private int lineNumber = 0;
 
     @Override
@@ -29,6 +33,12 @@ public class OrderRecordParser implements CsvRecordParser<Order> {
 
         if (cantidad <= 0) {
             throw new IllegalArgumentException("Cantidad inválida (" + cantidad + ") en línea " + lineNumber);
+        }
+        if (posX < 0 || posX > ScenarioDefaults.GRID_ANCHO || posY < 0 || posY > ScenarioDefaults.GRID_ALTO) {
+            throw new IllegalArgumentException("Coordenadas fuera de la grilla (" + data[0] + "," + data[1] + ") en línea " + lineNumber);
+        }
+        if (!HORIZONTES_VALIDOS.contains((int) horizonteHoras) || horizonteHoras != Math.floor(horizonteHoras)) {
+            throw new IllegalArgumentException("Horizonte inválido (" + data[4] + " h); usa 4, 8, 12, 18 o 36 en línea " + lineNumber);
         }
 
         Location destination = new Location(idCliente, idCliente, posX, posY, Location.LocationType.CUSTOMER);

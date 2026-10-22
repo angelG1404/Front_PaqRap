@@ -17,6 +17,7 @@ public class ATSOptimizer implements RouteOptimizer {
         public int stagnationThreshold = 20; // Iterations without improvement to trigger adaptation
         public double diversificationPenaltyWeight = 50.0; // Penalty weight for frequent move edges
         public boolean verboseLogging = true;
+        public long maxTimeMs = 0; // Límite de tiempo real por ejecución (0 = sin límite)
     }
 
     private final ATSConfig config;
@@ -84,7 +85,12 @@ public class ATSOptimizer implements RouteOptimizer {
                 config.maxIterations, config.initialTenure, config.minTenure, config.maxTenure, config.stagnationThreshold));
 
         // Bucle principal del algoritmo ATS
+        long startMs = System.currentTimeMillis();
         for (int iter = 1; iter <= config.maxIterations; iter++) {
+            if (config.maxTimeMs > 0 && System.currentTimeMillis() - startMs > config.maxTimeMs) {
+                log(String.format("Iter %d: límite de tiempo alcanzado. Deteniendo ATS.", iter));
+                break;
+            }
             // 1. Generar vecindario: todos los movimientos posibles (Relocate, Swap, Reassign)
             List<CandidateMove> candidateMoves = generateNeighborhood(currentSolution, maintenances, breakdowns, roadblocks);
 

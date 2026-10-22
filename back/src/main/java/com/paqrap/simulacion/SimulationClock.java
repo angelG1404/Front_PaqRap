@@ -1,27 +1,28 @@
 package com.paqrap.simulacion;
 
+/**
+ * Único lugar donde se convierte tiempo real en tiempo simulado. Usa el tiempo real transcurrido
+ * (no la cantidad de ticks), así una corrida 5D dura lo mismo aunque algún tick se retrase.
+ */
 public class SimulationClock {
-    private double currentMinutes;
+
     private final double speedFactor;
+    private long ultimoNanos;
 
-    public SimulationClock(double startMinutes, double speedFactor) {
-        this.currentMinutes = startMinutes;
+    public SimulationClock(double speedFactor) {
         this.speedFactor = speedFactor;
+        this.ultimoNanos = System.nanoTime();
     }
 
-    public synchronized void avanzar(double realSecondsElapsed) {
-        this.currentMinutes += (realSecondsElapsed / 60.0) * speedFactor;
+    /** Horas simuladas transcurridas desde la llamada anterior. */
+    public synchronized double tomarDeltaHoras() {
+        long ahora = System.nanoTime();
+        double segundosReales = (ahora - ultimoNanos) / 1e9;
+        ultimoNanos = ahora;
+        return segundosReales * speedFactor / 3600.0;
     }
 
-    public synchronized double getCurrentMinutes() {
-        return currentMinutes;
-    }
-
-    public String formatSimTime() {
-        int totalMinutes = (int) currentMinutes;
-        int days = totalMinutes / (24 * 60);
-        int hours = (totalMinutes % (24 * 60)) / 60;
-        int minutes = totalMinutes % 60;
-        return String.format("%02dd%02dh%02dm", days, hours, minutes);
+    public double getSpeedFactor() {
+        return speedFactor;
     }
 }
