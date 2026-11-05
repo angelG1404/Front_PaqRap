@@ -40,13 +40,13 @@ export function Layout() {
 
   return <div className="app-shell">
     <aside className="sidebar">
-      <Link className="brand" to="/simulacion/parametros"><span><Icon name="box" /> PAQRAP</span><small>LOGISTICS ENGINE</small></Link>
+      <Link className="brand" to="/simulacion"><span><Icon name="box" /> PAQRAP</span><small>LOGISTICS ENGINE</small></Link>
       <nav aria-label="Navegación principal">
         {navigation.map((item) => {
           const isDaily = item.to === '/operacion-diaria'
           const isSim = item.to === '/simulacion'
           const isActiveIndicator = (isDaily && hasDaily) || (isSim && hasSimulation)
-          return <NavLink key={item.to} to={item.to === '/simulacion' ? '/simulacion/parametros' : item.to} className={({ isActive }) => `nav-item ${isActive || (item.to === '/simulacion' && simulation) ? 'active' : ''}`}>
+          return <NavLink key={item.to} to={item.to} className={({ isActive }) => `nav-item ${isActive || (item.to === '/simulacion' && simulation) ? 'active' : ''}`}>
             <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}><Icon name={item.icon} />{item.name}</span>
             {isActiveIndicator && <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block', marginLeft: 'auto' }} title="Corrida activa" />}
           </NavLink>

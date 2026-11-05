@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ALGORITMOS, ALMACENES, FLOTA, GRID_ALTO, GRID_ANCHO, HORIZONTE_5D, MODOS, PORCENTAJE_MAXIMO } from '../config/defaults'
 import { useSimulation } from '../context/SimulationContext'
@@ -16,6 +16,30 @@ export function ParametersPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [conflictRun, setConflictRun] = useState<EscenarioActivoInfo | null>(null)
 
+  const [activeRuns, setActiveRuns] = useState<EscenarioActivoInfo[]>([])
+  useEffect(() => {
+    let mounted = true
+    let pending = false
+    const refresh = async () => {
+      if (pending) return
+      pending = true
+      try {
+        const runs = await getEscenariosActivos()
+        if (mounted) setActiveRuns(runs.filter((run) => run.estado === 'EN_CURSO' && run.escenario !== 'DIARIO'))
+      } finally { pending = false }
+    }
+    void refresh()
+    const timer = window.setInterval(() => { void refresh() }, 5000)
+    window.addEventListener('focus', refresh)
+    return () => { mounted = false; window.clearInterval(timer); window.removeEventListener('focus', refresh) }
+  }, [])
+  const selectedActiveRun = activeRuns.find((run) => run.escenario === draft.escenario)
+  function viewRun(run: EscenarioActivoInfo) {
+    setParametros({ ...parametros, escenario: run.escenario })
+    setRunId(run.escenario, run.runId)
+    navigate('/simulacion/mapa')
+  }
+
   const { verdeMinPct, ambarMinPct } = draft.umbralesSemaforo
   const total = Object.values(draft.flota).reduce((sum, count) => sum + count, 0)
   const thresholdsValid = Number.isFinite(verdeMinPct) && Number.isFinite(ambarMinPct) && ambarMinPct >= 0 && verdeMinPct <= PORCENTAJE_MAXIMO && ambarMinPct < verdeMinPct
@@ -29,6 +53,7 @@ export function ParametersPage() {
 
   async function start(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (selectedActiveRun) { viewRun(selectedActiveRun); return }
     if (!canStart || loading) return
     setLoading(true)
     setErrorMsg(null)
@@ -79,11 +104,11 @@ export function ParametersPage() {
   }
 
   return <form onSubmit={start} className="parameters">
+    {activeRuns.length > 0 && <section className="card mb-4 active-run-panel" aria-label="Simulaciones en curso"><h2>Simulaciones en curso</h2>{activeRuns.map((run) => <div key={run.runId} className="flex items-center justify-between gap-3 mt-3"><span>{run.escenario === '5D' ? 'Simulación 5D' : 'Colapso Logístico'} en curso</span><button type="button" className="back-parameters view-run-button" onClick={() => viewRun(run)}>Ver corrida</button></div>)}</section>}
     {errorMsg && <div className="run-alert mb-4 p-3 bg-red-100 text-red-800 rounded flex items-center justify-between">
       <span>{errorMsg}</span>
-      {conflictRun && <button type="button" className="secondary-button ml-4" onClick={() => {
-        setRunId(conflictRun.escenario, conflictRun.runId)
-        navigate('/simulacion/mapa')
+      {conflictRun && <button type="button" className="secondary-button ml-4 view-run-button" onClick={() => {
+        viewRun(conflictRun)
       }}>Ver corrida activa</button>}
     </div>}
 
@@ -92,7 +117,7 @@ export function ParametersPage() {
         <fieldset><legend className="field-label">MODO DE SIMULACIÓN</legend><div className="mode-options">{MODOS.map((mode) => <label key={mode.id} className={`mode-option ${draft.escenario === mode.id ? 'selected' : ''}`}><div><strong>{mode.nombre}</strong><input type="radio" name="escenario" value={mode.id} checked={draft.escenario === mode.id} onChange={() => setDraft({ ...draft, escenario: mode.id })} /></div><p>{mode.descripcion}</p></label>)}</div></fieldset>
 
         <label className="field-label mt-3" htmlFor="algoritmo">ALGORITMO</label><select id="algoritmo" value={draft.algoritmo} onChange={(e) => setDraft({ ...draft, algoritmo: e.target.value as ParametrosCorrida['algoritmo'] })}>{ALGORITMOS.map((algoritmo) => <option key={algoritmo}>{algoritmo}</option>)}</select>
-        <label className="field-label mt-3" htmlFor="fecha">FECHA DE INICIO</label><input id="fecha" type="date" required value={draft.fechaInicio.slice(0, 10)} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} /><p className="date-hint">El día 01 del archivo de pedidos corresponde a las 00:00 de esta fecha.</p>
+        <label className="field-label mt-3" htmlFor="fecha">FECHA Y HORA DE INICIO</label><input id="fecha" type="datetime-local" step="60" required value={draft.fechaInicio.length === 10 ? `${draft.fechaInicio}T00:00` : draft.fechaInicio.slice(0, 16)} onChange={(e) => setDraft({ ...draft, fechaInicio: e.target.value })} /><p className="date-hint">El día 01 del archivo corresponde a esta fecha. La corrida comienza a la hora y minuto seleccionados.</p>
         <div className="horizon"><span>HORIZONTE ESTIMADO</span><strong>{draft.escenario === '5D' ? `${HORIZONTE_5D.dias} días simulados (${HORIZONTE_5D.horas} h)` : draft.escenario === 'COLAPSO' ? 'Hasta el colapso' : 'Continuo'}</strong></div>
       </Card>
     </div>
@@ -112,6 +137,6 @@ export function ParametersPage() {
         <div className="table-scroll"><table className="warehouse-table"><thead><tr><th>ALMACÉN (X, Y)</th><th>CAPACIDAD</th><th>RECARGA</th></tr></thead><tbody>{ALMACENES.map((warehouse) => <tr key={warehouse.id}><td><strong>{warehouse.nombre}</strong><span className="coordinates">({warehouse.x}, {warehouse.y})</span></td><td>{Number.isFinite(warehouse.capacidad) ? warehouse.capacidad.toLocaleString('es-PE') : '∞'}</td><td>{warehouse.recarga}</td></tr>)}</tbody></table></div><p className="fleet-total"><span>Cuadrícula táctica</span><strong>Red {GRID_ANCHO} × {GRID_ALTO} km</strong></p>
       </Card>
     </div>
-    <div className="start-panel"><button type="submit" className="start-button" disabled={!canStart || loading}><Icon name="play" />{loading ? 'Iniciando...' : 'Iniciar Corrida'}<Icon name="arrow" /></button><p className={canStart ? 'ready' : ''}>{canStart ? '✓ Con la configuración validada, puedes iniciar la corrida.' : 'Revisa la configuración y el archivo de pedidos para iniciar la corrida.'}</p></div>
+    <div className={`start-panel ${selectedActiveRun ? 'active-run-panel' : ''}`}>{selectedActiveRun ? <><button type="button" className="start-button view-run-button" onClick={() => viewRun(selectedActiveRun)}><Icon name="map" />Ver corrida</button><p>Ya hay una corrida de este escenario en curso.</p></> : <><button type="submit" className="start-button" disabled={!canStart || loading}><Icon name="play" />{loading ? 'Iniciando...' : 'Iniciar Corrida'}<Icon name="arrow" /></button><p className={canStart ? 'ready' : ''}>{canStart ? '✓ Con la configuración validada, puedes iniciar la corrida.' : 'Revisa la configuración y el archivo de pedidos para iniciar la corrida.'}</p></>}</div>
   </form>
 }

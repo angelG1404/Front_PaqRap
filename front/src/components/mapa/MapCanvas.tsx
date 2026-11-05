@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useImperativeHandle, useRef, type Ref } from 'react'
 import { ALMACENES, GRID_ALTO, GRID_ANCHO, GRILLA_INTERVALO } from '../../config/defaults'
-import { COLORES_SEMAFORO, COLORES_TIPO, MAP_THEME, NOMBRES_ESTADO_PEDIDO, NOMBRES_ESTADO_VEHICULO, NOMBRES_TIPO } from '../../config/theme'
+import { COLORES_CARGA, COLORES_AVERIA, estadoCarga, COLORES_SEMAFORO, COLORES_TIPO, MAP_THEME, NOMBRES_ESTADO_PEDIDO, NOMBRES_ESTADO_VEHICULO, NOMBRES_TIPO } from '../../config/theme'
 import type { AlmacenSnap, BloqueoSnap, PedidoSnap, Snapshot, TipoVehiculo, VehiculoSnap } from '../../types/snapshot'
 import { readableSimTime } from '../../services/simulationTime'
 import { distanceToSegment, movementPath, pointOnPath, project, remainingPath, unproject, type Point, type Viewport } from './geometry'
@@ -100,7 +100,7 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
       const dpr = window.devicePixelRatio || 1
       element.width = Math.round(rect.width * dpr); element.height = Math.round(rect.height * dpr)
       view.current.width = rect.width; view.current.height = rect.height
-      fit.current = Math.max(1, Math.min((rect.width - 110) / GRID_ANCHO, (rect.height - 120) / GRID_ALTO))
+      fit.current = Math.max(0.1, Math.min((rect.width - 110) / GRID_ANCHO, (rect.height - 120) / GRID_ALTO))
       placeView()
     }
     const observer = new ResizeObserver(resize)
@@ -120,11 +120,13 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     }
     function vehicleIcon(vehicle: VehiculoSnap, x: number, y: number, selected: boolean) {
       const broken = vehicle.estado === 'AVERIADO'
+      const breakdownColor = vehicle.averia ? COLORES_AVERIA[vehicle.averia.tipo] : MAP_THEME.averiado
+      const cargoColor = COLORES_CARGA[estadoCarga(vehicle)]
       ctx.save(); ctx.translate(x, y)
       if (selected) { ctx.beginPath(); ctx.arc(0, 0, 21, 0, Math.PI * 2); ctx.fillStyle = `${COLORES_TIPO[vehicle.tipo]}22`; ctx.fill() }
       ctx.beginPath(); ctx.arc(0, 0, selected ? 15 : 12.5, 0, Math.PI * 2)
-      ctx.fillStyle = 'white'; ctx.fill(); ctx.strokeStyle = broken ? MAP_THEME.averiado : COLORES_SEMAFORO[vehicle.semaforo]; ctx.lineWidth = selected ? 3.2 : 2.4; ctx.stroke()
-      ctx.beginPath(); ctx.arc(0, 0, 9.5, 0, Math.PI * 2); ctx.fillStyle = broken ? MAP_THEME.averiado : COLORES_TIPO[vehicle.tipo]; ctx.fill()
+      ctx.fillStyle = 'white'; ctx.fill(); ctx.strokeStyle = cargoColor; ctx.lineWidth = selected ? 3.2 : 2.4; ctx.stroke()
+      ctx.beginPath(); ctx.arc(0, 0, 9.5, 0, Math.PI * 2); ctx.fillStyle = cargoColor; ctx.fill()
       ctx.strokeStyle = 'white'; ctx.lineWidth = 1.2; ctx.lineJoin = 'round'; ctx.beginPath()
       if (vehicle.tipo === 'AUTO') {
         ctx.moveTo(-6, 3); ctx.lineTo(-6, -2); ctx.lineTo(-4, -5); ctx.lineTo(4, -5); ctx.lineTo(6, -2); ctx.lineTo(6, 3); ctx.closePath()
@@ -137,8 +139,8 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
       }
       ctx.stroke()
       if (broken) {
-        ctx.beginPath(); ctx.arc(9, -9, 6, 0, Math.PI * 2); ctx.fillStyle = 'white'; ctx.fill(); ctx.strokeStyle = MAP_THEME.averiado; ctx.lineWidth = 1.5; ctx.stroke()
-        ctx.fillStyle = MAP_THEME.averiado; ctx.font = `700 9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', 9, -8.5)
+        ctx.beginPath(); ctx.arc(9, -9, 6, 0, Math.PI * 2); ctx.fillStyle = 'white'; ctx.fill(); ctx.strokeStyle = breakdownColor; ctx.lineWidth = 1.5; ctx.stroke()
+        ctx.fillStyle = breakdownColor; ctx.font = `700 9px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(vehicle.averia?.tipo ?? '!'), 9, -8.5)
       } else if (vehicle.estado === 'ATENDIENDO') {
         ctx.beginPath(); ctx.arc(9, -9, 5, 0, Math.PI * 2); ctx.fillStyle = COLORES_SEMAFORO.VERDE; ctx.fill()
         ctx.strokeStyle = 'white'; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.moveTo(6.8, -9); ctx.lineTo(8.6, -7.2); ctx.lineTo(11.3, -10.6); ctx.stroke()

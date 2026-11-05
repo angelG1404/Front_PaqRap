@@ -1,66 +1,65 @@
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\EscenarioActivoDto.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\ALNSOptimizer.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\TimeConverter.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ScenarioDataLoader.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\CsvRecordParser.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\TabuList.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Warehouse.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\Main.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\PaqrapApplication.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\util\AStarGridRouter.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\GridPathfinder.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\GreedyPlanner.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Solution.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SnapshotMapper.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\EscenarioController.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimTime.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\BreakdownRecordParser.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimulationEngine.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulator\ScenarioGenerator.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\config\CorsConfig.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\ConstructorSolucionInicial.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Location.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Move.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\VehicleType.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\ATSOptimizer.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\RoadblockRecordParser.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\VehiculoDisponible.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\InstanciaPlanificacion.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Maintenance.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\RouteOptimizer.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ArchivoPedidosStore.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Order.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ArchivoSubidoDto.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\SpaController.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\ws\SnapshotPublisher.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\config\WebSocketConfig.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\VehiculoSim.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\util\ReportGenerator.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AtsPlanner.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\BloqueoSim.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\InitialSolutionBuilder.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\PedidoController.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\OrderRecordParser.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\PlanResultado.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\PedidoSim.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Breakdown.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\MapaController.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\MaintenanceRecordParser.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\ScenarioRunner.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ErrorDto.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Vehicle.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\ScenarioConfig.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\AlmacenSim.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\config\ScenarioDefaults.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Route.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AlgorithmSelector.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimulationClock.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AlnsPlanner.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\ArchivoController.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ParametrosCorridaDto.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\Corrida.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\planificador\PlanningAlgorithm.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ArchivoBloqueosStore.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\simulator\OperationsSimulator.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\model\Roadblock.java
-C:\Users\Fabian\Desktop\prototipo DP1\Front_PaqRap\back\src\main\java\com\paqrap\solver\SolutionEvaluator.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Vehicle.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AlnsPlanner.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ArchivoPedidosStore.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\PlanningAlgorithm.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\GridPathfinder.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\config\CorsConfig.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\InstanciaPlanificacion.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\MapaController.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ArchivoSubidoDto.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\PaqrapApplication.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\GreedyPlanner.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\VehiculoSim.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulator\OperationsSimulator.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\BloqueoSim.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\ws\SnapshotPublisher.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\PlanResultado.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\ATSOptimizer.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\SolutionEvaluator.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\ScenarioRunner.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimTime.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\PedidoSim.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AtsPlanner.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SnapshotMapper.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ParametrosCorridaDto.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\AlmacenSim.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\EscenarioActivoDto.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Warehouse.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\Main.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Route.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\InitialSolutionBuilder.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Solution.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\ConstructorSolucionInicial.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\ALNSOptimizer.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\BreakdownRecordParser.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\config\WebSocketConfig.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\util\ReportGenerator.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ScenarioDataLoader.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\ArchivoBloqueosStore.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Order.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\RoadblockRecordParser.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\util\AStarGridRouter.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Maintenance.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Move.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\OrderRecordParser.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\PedidoController.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Roadblock.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Breakdown.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\VehiculoDisponible.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimulationClock.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\VehicleType.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\EscenarioController.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\TimeConverter.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\model\Location.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\rest\ArchivoController.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\config\ScenarioDefaults.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulator\ScenarioGenerator.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\SimulationEngine.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\RouteOptimizer.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\web\dto\ErrorDto.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\MaintenanceRecordParser.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\planificador\AlgorithmSelector.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\ScenarioConfig.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\solver\TabuList.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\simulacion\Corrida.java
+C:\DP\Front_PaqRap\back\src\main\java\com\paqrap\ingesta\CsvRecordParser.java

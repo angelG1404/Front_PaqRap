@@ -79,3 +79,9 @@ footer { background: white; border-top: 1px solid #dce5f2; padding: 12px 24px; d
 .optional-file-row .secondary-button { margin-top: 0; flex-shrink: 0; }
 .optional { font-size: 8px; background: #eef3fa; color: #4f6a8e; border-radius: 3px; padding: 2px 5px; margin-left: 4px; }
 .date-hint { font-size: 9px; color: #7083a2; margin-top: 5px; }
+
+.parameters .view-run-button { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; box-shadow: none; }
+.parameters .view-run-button:not(:disabled):hover { background: #fecaca; color: #7f1d1d; }
+
+.parameters .active-run-panel { background: #fff1f2; border-color: #fca5a5; color: #991b1b; }
+.parameters .active-run-panel p { color: #9f3a42; }

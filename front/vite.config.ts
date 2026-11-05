@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
-      outDir: '../back/src/main/resources/static',
+      outDir: 'dist',
       emptyOutDir: true,
     },
   }

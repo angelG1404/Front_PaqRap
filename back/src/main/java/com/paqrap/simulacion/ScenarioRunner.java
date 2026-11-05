@@ -97,8 +97,9 @@ public class ScenarioRunner {
 
         // En DIARIO el reloj es el real; en las simulaciones el día 01 del archivo es la fecha de inicio.
         LocalDateTime ahora = LocalDateTime.now();
-        LocalDateTime base = diario ? ahora.toLocalDate().atStartOfDay() : fechaInicio(params.getFechaInicio()).atStartOfDay();
-        double inicioHoras = diario ? ChronoUnit.MILLIS.between(base, ahora) / 3_600_000.0 : 0.0;
+        LocalDateTime inicio = diario ? ahora : fechaInicio(params.getFechaInicio());
+        LocalDateTime base = inicio.toLocalDate().atStartOfDay();
+        double inicioHoras = ChronoUnit.MILLIS.between(base, inicio) / 3_600_000.0;
 
         String runId = "run-" + clave.toLowerCase() + "-" + System.currentTimeMillis();
         List<BloqueoSim> bloqueos = new ArrayList<>();
@@ -185,16 +186,12 @@ public class ScenarioRunner {
         return umbrales.get(clave);
     }
 
-    private static LocalDate fechaInicio(String texto) {
-        if (texto == null || texto.isBlank()) return LocalDate.now();
+    static LocalDateTime fechaInicio(String texto) {
+        if (texto == null || texto.isBlank()) return LocalDate.now().atStartOfDay();
         try {
-            return LocalDateTime.parse(texto).toLocalDate();
+            return (texto.length() == 10 ? LocalDate.parse(texto).atStartOfDay() : LocalDateTime.parse(texto)).truncatedTo(ChronoUnit.MINUTES);
         } catch (RuntimeException e) {
-            try {
-                return LocalDate.parse(texto.length() >= 10 ? texto.substring(0, 10) : texto);
-            } catch (RuntimeException ignored) {
-                return LocalDate.now();
-            }
+            throw new IllegalArgumentException("Fecha y hora de inicio inválidas.");
         }
     }
 

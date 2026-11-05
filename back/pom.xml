@@ -39,6 +39,16 @@
         </dependency>
     </dependencies>
     <build>
+        <!-- El frontend se publica por separado con Nginx. Excluir también
+             compilaciones antiguas que todavía existan en resources/static. -->
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>static/**</exclude>
+                </excludes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

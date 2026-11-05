@@ -203,6 +203,7 @@ export class MockSource implements SnapshotSource {
     this.snapshot.simTime = formatSimTime(this.minutes)
     const start = this.escenario === 'DIARIO' ? this.startedAt : this.options?.fechaInicio ? new Date(this.options.fechaInicio).getTime() : this.startedAt
     const elapsedMinutes = this.escenario === 'DIARIO' ? this.minutes : this.minutes - MOCK_CONFIG.inicioSimuladoMinutos
+    this.snapshot.inicioIso = localIso(new Date(start))
     this.snapshot.simTimeIso = localIso(new Date(start + elapsedMinutes * 60000))
     this.snapshot.metricas = {
       pedidosTotal: pedidos.length + this.deliveredHistory,

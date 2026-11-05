@@ -105,3 +105,44 @@
 .stop-button:hover { background: #a9182a; }.stop-button:disabled { opacity: .6; }
 .clock-pill.speed time { color: #4531a8; }
 .clock-pill.metrics time { margin-right: 6px; }.clock-pill.metrics time.late { color: #c81e33; }
+
+/* Fit the initial map inside the viewport; scroll the controls independently. */
+.map-page { min-height: 0; }
+.map-side-panel { overflow-y: auto; }
+.vehicle-filters { padding: 12px; border-bottom: 1px solid #d6dce7; background: white; flex-shrink: 0; }
+.vehicle-filters strong { font-size: 12px; }
+.vehicle-filters [role=group] { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.vehicle-filters button { display: inline-flex; align-items: center; gap: 4px; border: 1px solid #aab9cc; border-radius: 5px; background: white; padding: 5px 7px; font-size: 11px; }
+.vehicle-filters button[aria-pressed=true] { background: #e1ecfa; border-color: #203c61; font-weight: 700; }
+.vehicle-filters i { width: 9px; height: 9px; border-radius: 50%; }
+.vehicle-filters p, .vehicle-filters small { font-size: 10px; line-height: 1.5; }
+@media (max-width: 1100px) {
+  .map-workspace { height: 100dvh; min-height: 0; }
+}
+@media (max-width: 700px) {
+  .map-workspace { height: 100dvh; min-height: 0; }
+  .map-page-header, .map-summary-bar, .daily-header { flex-wrap: wrap; padding: 8px 12px; gap: 8px; min-height: 0; }
+  .live-map, .daily-page .live-map { flex-direction: row; overflow: hidden; }
+  .map-stage, .daily-page .map-stage { min-height: 0; flex: 1; }
+  .map-side-panel, .daily-page .map-side-panel { position: absolute; inset: 0 0 0 auto; width: min(310px, 85%); max-height: none; z-index: 5; }
+  .collapse-panel, .daily-page .collapse-panel { top: 50%; bottom: auto; right: min(310px, 85%); transform: none; z-index: 6; width: 20px; height: 40px; }
+  .panel-collapsed .collapse-panel, .daily-page .panel-collapsed .collapse-panel { right: 0; bottom: auto; }
+  .map-clock-bar { gap: 4px; padding: 5px 8px; }
+  .clock-pill { flex-wrap: wrap; white-space: normal; padding: 3px 6px; }
+}
+@media (max-width: 560px) {
+  .map-workspace { height: calc(100dvh - 145px); min-height: 0; }
+}
+
+/* Keep registration reachable even when filters and legend exceed the panel height. */
+.map-side-panel.has-registration .map-operations { flex: 0 0 auto; min-height: auto; }
+.map-side-panel.has-registration .registration-scroll { flex: none; overflow: visible; }
+.map-side-panel.has-registration .map-legend { flex-shrink: 0; }
+.map-side-panel.has-registration .entity-list { max-height: 350px; }
+.collapse-panel.show-registration { width: auto; height: auto; top: 55px; padding: 8px 10px; font-size: 12px; font-weight: 600; }
+
+.map-tabs.four-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.map-tabs.four-tabs button { font-size: 11px; }
+#breakdowns-panel .breakdown-form { margin-top: 0; }
+
+.vehicle-filters .filter-label { margin: 10px 0 0; font-size: 11px; font-weight: 600; color: #44576e; }

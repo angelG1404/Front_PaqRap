@@ -60,21 +60,11 @@ así que el front no necesita conocer el puerto del back.
 **Desde otro dispositivo de la misma red** (celular, otra laptop): abre `http://<IP-de-tu-equipo>:5173`.
 Vite ya escucha en todas las interfaces; si no carga, permite Node.js en el firewall de Windows.
 
-## 4. Opción B — Un solo servidor (para el laboratorio o el despliegue)
+## 4. Producción — frontend y backend separados
 
-El front se compila dentro de `back/src/main/resources/static` y el JAR sirve todo desde una sola URL:
-
-```powershell
-cd Front_PaqRap\front
-npm install
-npm run build
-cd ..\back
-mvn package -DskipTests
-java -jar target\paqrap-back-1.0.0.jar
-```
-
-Abre **http://localhost:8081** (o `http://<IP>:8081` desde otro dispositivo). Las rutas del SPA
-(`/simulacion/mapa`, `/operacion-diaria`, …) se pueden recargar o compartir directamente.
+React se compila en `front/dist` y Nginx sirve esos archivos. El JAR contiene
+solo la API y WebSocket. Para compilar, empaquetar y configurar Nginx, seguir
+[DESPLIEGUE.md](DESPLIEGUE.md). Las rutas del SPA las resuelve Nginx.
 
 ## 5. Configuración
 

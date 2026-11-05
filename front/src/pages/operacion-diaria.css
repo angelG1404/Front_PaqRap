@@ -45,3 +45,10 @@
 .plan-pill.busy i { animation: plan-pulse 1s infinite; }
 .plan-pill i { width: 6px; height: 6px; border-radius: 50%; background: #6d5ce8; }
 @keyframes plan-pulse { 50% { opacity: .25; } }
+
+@media (max-width: 700px) {
+  .daily-page .map-side-panel { max-height: none; flex: none; }
+  .daily-page .live-map { overflow: hidden; }
+  .daily-page .collapse-panel { bottom: auto; }
+  .daily-page .panel-collapsed .collapse-panel { bottom: auto; }
+}

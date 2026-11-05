@@ -17,6 +17,11 @@ import './operacion-diaria.css'
 export function DailyOperationPage() {
   const { runIds, setRunId } = useSimulation()
   const [activeRunId, setActiveRunId] = useState<string | null>(USE_MOCK ? runIds.DIARIO ?? 'mock-diario-default' : null)
+  const [ahora, setAhora] = useState(() => localIso(new Date()))
+  useEffect(() => {
+    const timer = window.setInterval(() => setAhora(localIso(new Date())), 1000)
+    return () => window.clearInterval(timer)
+  }, [])
   const [buscando, setBuscando] = useState(!USE_MOCK)
   const [loading, setLoading] = useState(false)
   const [algoritmo, setAlgoritmo] = useState<'ALNS' | 'ATS'>('ALNS')
@@ -95,7 +100,7 @@ export function DailyOperationPage() {
 
   const flota = snapshot?.metricas.flota
   return <div className="map-page daily-page">
-    <header className="daily-header"><div className="daily-heading"><div><h1>Operación en Tiempo Real</h1><span className="live-badge"><i />En vivo — <time dateTime={snapshot?.simTimeIso}>{formatFechaHora(snapshot?.simTimeIso)}</time></span>
+    <header className="daily-header"><div className="daily-heading"><div><h1>Operación en Tiempo Real</h1><span className="live-badge"><i />En vivo</span>
       {!USE_MOCK && <label className="upload-pill"><Icon name="upload" />Cargar bloqueos<input type="file" accept=".txt,.csv" className="sr-only" onChange={(e) => { void handleBloqueos(e.target.files?.[0]); e.target.value = '' }} /></label>}
       <PlanificacionPill snapshot={snapshot} /></div>
       <p>Supervisión y despacho continuo de flota activa</p><span className={`daily-connection ${estadoConexion.toLowerCase()}`} role="status">● {estadoConexion === 'CONECTADO' ? 'Conectado' : estadoConexion === 'ERROR' ? 'Error de conexión' : estadoConexion === 'DESCONECTADO' ? 'Desconectado' : 'Conectando…'}</span>
@@ -103,10 +108,11 @@ export function DailyOperationPage() {
       <div className="fleet-counters" aria-label="Flota configurada">{FLOTA.map((item) => { const type = item.id.toUpperCase() as TipoVehiculo; return <span key={item.id} title={NOMBRES_TIPO[type]}><Icon name={ICONOS_TIPO[type]} /><strong>{flota?.[item.id] ?? item.cantidad}</strong><span className="sr-only">{NOMBRES_TIPO[type]}</span></span> })}</div>
       <div className="package-counter"><span>PEDIDOS</span><strong>{snapshot?.metricas.entregados ?? '—'} <i>/</i> {snapshot?.metricas.pedidosTotal ?? '—'}</strong><small>entregados / total</small></div>
     </header>
+    <div className="map-clock-bar" aria-label="Relojes de operación">
+      <span className="clock-pill" title="Hora actual del dispositivo. La operación diaria avanza en tiempo real."><strong>FECHA Y HORA ACTUAL</strong><time dateTime={ahora}>{formatFechaHora(ahora)}</time></span>
+    </div>
     <MapaEnVivo snapshot={snapshot} estadoConexion={estadoConexion} escenario="DIARIO" etiquetaRegistro="Registro" seleccionandoPunto={eligiendo} puntoElegido={puntoElegido} onElegirPunto={(pickedX, pickedY) => { setCoordenadas({ x: String(pickedX), y: String(pickedY) }); setEligiendo(false) }} onCancelarSeleccion={() => setEligiendo(false)}
-      panelRegistrar={<>
-        <RegistroPedidoForm coordenadas={coordenadas} setCoordenadas={setCoordenadas} eligiendo={eligiendo} onElegir={() => setEligiendo(true)} onCancelar={() => setEligiendo(false)} disponible={disponible} />
-        {!USE_MOCK && <RegistroAveriaForm runId={activeRunId} vehiculos={snapshot?.vehiculos ?? []} disponible={disponible} />}
-      </>} />
+      panelRegistrar={<RegistroPedidoForm coordenadas={coordenadas} setCoordenadas={setCoordenadas} eligiendo={eligiendo} onElegir={() => setEligiendo(true)} onCancelar={() => setEligiendo(false)} disponible={disponible} />}
+      panelAverias={!USE_MOCK ? <RegistroAveriaForm runId={activeRunId} vehiculos={snapshot?.vehiculos ?? []} disponible={disponible} /> : undefined} />
   </div>
 }
