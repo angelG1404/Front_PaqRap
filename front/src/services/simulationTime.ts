@@ -25,3 +25,19 @@ export function formatFechaHora(iso?: string): string {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
+
+/** Fecha y hora a nivel de minuto: 04/11/2026 23:14. */
+export function formatFechaHoraMinuto(iso?: string): string {
+  const texto = formatFechaHora(iso)
+  return /\d{2}:\d{2}:\d{2}$/.test(texto) ? texto.slice(0, -3) : texto
+}
+
+/** Tiempo entre dos instantes, a nivel de minuto: "2 d 05 h 37 min". */
+export function formatTranscurrido(desdeIso?: string, hastaIso?: string): string {
+  if (!desdeIso || !hastaIso) return '—'
+  const desde = new Date(desdeIso).getTime(), hasta = new Date(hastaIso).getTime()
+  if (Number.isNaN(desde) || Number.isNaN(hasta)) return '—'
+  const minutos = Math.max(0, Math.floor((hasta - desde) / 60000))
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${Math.floor(minutos / 1440)} d ${pad(Math.floor(minutos % 1440 / 60))} h ${pad(minutos % 60)} min`
+}

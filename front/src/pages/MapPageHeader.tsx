@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { FLOTA } from '../config/defaults'
 import { ICONOS_TIPO, NOMBRES_TIPO } from '../config/theme'
 import type { Snapshot, TipoVehiculo } from '../types/snapshot'
-import { formatDuration, formatFechaHora, readableSimTime } from '../services/simulationTime'
+import { formatDuration, formatFechaHora, formatFechaHoraMinuto, formatTranscurrido, readableSimTime } from '../services/simulationTime'
+import { useHoraActual } from '../hooks/useHoraActual'
 import { USE_MOCK } from '../services/api'
 import { Icon } from '../components/Icon'
 import { PlanificacionPill } from '../components/PlanificacionPill'
@@ -15,6 +16,7 @@ export function MapPageHeader({ snapshot, escenario, onDetener, deteniendo }: Pr
   const [openedAt] = useState(() => Date.now())
   const [elapsed, setElapsed] = useState(0)
   useEffect(() => { const timer = setInterval(() => setElapsed(Math.floor((Date.now() - openedAt) / 1000)), 1000); return () => clearInterval(timer) }, [openedAt])
+  const ahora = useHoraActual()
   const daily = escenario === 'DIARIO'
   const estado = snapshot?.estado
   const enCurso = estado === 'EN_CURSO'
@@ -29,7 +31,13 @@ export function MapPageHeader({ snapshot, escenario, onDetener, deteniendo }: Pr
       {!daily && onDetener && enCurso && <button type="button" className="stop-button" onClick={onDetener} disabled={deteniendo}><span aria-hidden="true">■</span>{deteniendo ? 'Deteniendo…' : 'Detener'}</button>}
       <div className="fleet-counters" aria-label="Flota configurada">{FLOTA.map((item) => { const type = item.id.toUpperCase() as TipoVehiculo; return <span key={item.id} title={NOMBRES_TIPO[type]}><Icon name={ICONOS_TIPO[type]} /><strong>{flota?.[item.id] ?? item.cantidad}</strong><span className="sr-only">{NOMBRES_TIPO[type]}</span></span> })}</div>
       <div className="package-counter"><span>PEDIDOS</span><strong>{snapshot?.metricas.entregados ?? '—'} <i>/</i> {snapshot?.metricas.pedidosTotal ?? '—'}</strong><small>entregados / total</small></div></div>
-    <div className="map-clock-bar"><span className="clock-pill"><Icon name="clock" /><strong>{daily ? 'HORA LOCAL:' : 'SIMULACIÓN:'}</strong><time>{snapshot ? `${formatFechaHora(snapshot.simTimeIso)}${daily ? '' : ` | ${readableSimTime(snapshot.simTime).replace(/ · .*/, '')}`}` : '—'}</time></span>
+    <div className="map-clock-bar">
+      {daily ? <span className="clock-pill"><Icon name="clock" /><strong>HORA LOCAL:</strong><time>{snapshot ? formatFechaHoraMinuto(snapshot.simTimeIso) : '—'}</time></span>
+        : <>
+          <span className="clock-pill sim-now" title="Fecha y hora del momento simulado."><Icon name="clock" /><strong>MOMENTO SIMULADO:</strong><time dateTime={snapshot?.simTimeIso}>{snapshot ? `${formatFechaHoraMinuto(snapshot.simTimeIso)} | ${readableSimTime(snapshot.simTime).replace(/ · .*/, '')}` : '—'}</time></span>
+          <span className="clock-pill sim-elapsed" title="Tiempo simulado desde el inicio de la corrida."><Icon name="clock" /><strong>TRANSCURRIDO SIMULADO:</strong><time>{snapshot ? formatTranscurrido(snapshot.inicioIso, snapshot.simTimeIso) : '—'}</time></span>
+        </>}
+      <span className="clock-pill real-now" title="Fecha y hora actual del dispositivo (momento presente)."><Icon name="clock" /><strong>FECHA-HORA ACTUAL:</strong><time dateTime={ahora}>{formatFechaHoraMinuto(ahora)}</time></span>
       <span className="clock-pill duration"><Icon name="clock" /><strong>DURACIÓN:</strong><time>{formatDuration(duracion)}</time></span>
       {!daily && snapshot?.factorVelocidad && <span className="clock-pill speed"><strong>VELOCIDAD:</strong><time>{snapshot.factorVelocidad}x</time></span>}
       {!daily && snapshot && <span className="clock-pill metrics"><strong>ATRASADOS:</strong><time className={snapshot.metricas.atrasados ? 'late' : ''}>{snapshot.metricas.atrasados}</time><strong>COSTO:</strong><time>S/ {(snapshot.metricas.costoTotal ?? 0).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</time></span>}

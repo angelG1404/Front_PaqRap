@@ -3,7 +3,7 @@ import { MapaEnVivo } from '../components/mapa/MapaEnVivo'
 import { useSnapshots } from '../hooks/useSnapshots'
 import { createSource } from '../services/createSource'
 import { cargarBloqueosEnCorrida, getEscenariosActivos, iniciarEscenario, USE_MOCK } from '../services/api'
-import { formatFechaHora, localIso } from '../services/simulationTime'
+import { formatFechaHoraMinuto, localIso } from '../services/simulationTime'
 import { RegistroPedidoForm, type CoordenadasPedido } from '../components/RegistroPedidoForm'
 import { RegistroAveriaForm } from '../components/RegistroAveriaForm'
 import { PlanificacionPill } from '../components/PlanificacionPill'
@@ -109,7 +109,7 @@ export function DailyOperationPage() {
       <div className="package-counter"><span>PEDIDOS</span><strong>{snapshot?.metricas.entregados ?? '—'} <i>/</i> {snapshot?.metricas.pedidosTotal ?? '—'}</strong><small>entregados / total</small></div>
     </header>
     <div className="map-clock-bar" aria-label="Relojes de operación">
-      <span className="clock-pill" title="Hora actual del dispositivo. La operación diaria avanza en tiempo real."><strong>FECHA Y HORA ACTUAL</strong><time dateTime={ahora}>{formatFechaHora(ahora)}</time></span>
+      <span className="clock-pill" title="Hora actual del dispositivo. La operación diaria avanza en tiempo real."><strong>FECHA Y HORA ACTUAL</strong><time dateTime={ahora}>{formatFechaHoraMinuto(ahora)}</time></span>
     </div>
     <MapaEnVivo snapshot={snapshot} estadoConexion={estadoConexion} escenario="DIARIO" etiquetaRegistro="Registro" seleccionandoPunto={eligiendo} puntoElegido={puntoElegido} onElegirPunto={(pickedX, pickedY) => { setCoordenadas({ x: String(pickedX), y: String(pickedY) }); setEligiendo(false) }} onCancelarSeleccion={() => setEligiendo(false)}
       panelRegistrar={<RegistroPedidoForm coordenadas={coordenadas} setCoordenadas={setCoordenadas} eligiendo={eligiendo} onElegir={() => setEligiendo(true)} onCancelar={() => setEligiendo(false)} disponible={disponible} />}

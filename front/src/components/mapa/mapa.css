@@ -146,3 +146,6 @@
 #breakdowns-panel .breakdown-form { margin-top: 0; }
 
 .vehicle-filters .filter-label { margin: 10px 0 0; font-size: 11px; font-weight: 600; color: #44576e; }
+.clock-pill.sim-now time { color: #12375f; }
+.clock-pill.sim-elapsed time { color: #4531a8; }
+.clock-pill.real-now time { color: #007957; }
