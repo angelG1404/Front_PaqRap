@@ -322,6 +322,7 @@ public class SimulationEngine {
         for (PedidoSim p : plan) {
             p.estado = PedidoSim.Estado.EN_RUTA;
             p.vehiculoId = v.id;
+            p.almacenDespacho = v.almacen.id;
         }
         v.estado = VehiculoSim.Estado.EN_RUTA;
         PedidoSim primero = plan.get(0);

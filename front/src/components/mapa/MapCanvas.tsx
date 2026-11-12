@@ -163,7 +163,8 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     }
     function warehouseIcon(almacen: AlmacenSnap, x: number, y: number, parked: VehiculoSnap[]) {
       const config = ALMACENES.find((a) => a.id === almacen.id)
-      ctx.fillStyle = MAP_THEME.almacen; ctx.beginPath(); ctx.roundRect(x - 17, y - 17, 34, 34, 8); ctx.fill()
+      if (scene.current.selectedId === almacen.id) { ctx.beginPath(); ctx.arc(x, y, 25, 0, Math.PI * 2); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3; ctx.stroke() }
+      ctx.fillStyle = almacen.stock === null ? MAP_THEME.almacen : COLORES_CARGA[estadoCarga({ carga: almacen.stock, capacidad: almacen.capacidad ?? config?.capacidad ?? 1000 })]; ctx.beginPath(); ctx.roundRect(x - 17, y - 17, 34, 34, 8); ctx.fill()
       ctx.strokeStyle = 'white'; ctx.lineWidth = 1.5; ctx.beginPath()
       ctx.moveTo(x - 10, y + 9); ctx.lineTo(x - 10, y - 4); ctx.lineTo(x, y - 10); ctx.lineTo(x + 10, y - 4); ctx.lineTo(x + 10, y + 9); ctx.closePath()
       ctx.moveTo(x - 4, y + 9); ctx.lineTo(x - 4, y); ctx.lineTo(x + 4, y); ctx.lineTo(x + 4, y + 9); ctx.stroke()
@@ -174,7 +175,7 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
         const capacidad = almacen.capacidad ?? config?.capacidad ?? 1000
         const ratio = Math.max(0, Math.min(1, almacen.stock / (Number.isFinite(capacidad) ? capacidad : 1)))
         ctx.fillStyle = '#e9eff6'; ctx.beginPath(); ctx.roundRect(x - 34, y + 39, 68, 15, 4); ctx.fill(); ctx.strokeStyle = MAP_THEME.borde; ctx.lineWidth = 0.6; ctx.stroke()
-        ctx.fillStyle = ratio > 0.3 ? '#9fd8c3' : ratio > 0.1 ? '#f7d58a' : '#f5a3ab'; ctx.beginPath(); ctx.roundRect(x - 33, y + 40, 66 * ratio, 13, 3); ctx.fill()
+        ctx.fillStyle = `${COLORES_CARGA[estadoCarga({ carga: almacen.stock, capacidad })]}55`; ctx.beginPath(); ctx.roundRect(x - 33, y + 40, 66 * ratio, 13, 3); ctx.fill()
         ctx.fillStyle = MAP_THEME.texto; ctx.font = `10px ${FONT}`; ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic'; ctx.fillText(`${almacen.stock.toLocaleString('es-PE')}/${capacidad.toLocaleString('es-PE')}`, x, y + 50)
       }
       // Unidades estacionadas: una ficha por tipo en lugar de 37 íconos superpuestos.
@@ -336,7 +337,7 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
 
       const hovered = hover.current && !pointer && !current.seleccionandoPunto ? hitAt(hover.current) : null
       if (hovered && hover.current) tooltip(hovered, hover.current)
-      element.style.cursor = current.seleccionandoPunto ? 'crosshair' : pointer?.dragged ? 'grabbing' : hovered && (hovered.kind === 'vehiculo' || (hovered.kind === 'pedido' && hovered.item.vehiculoId)) ? 'pointer' : 'grab'
+      element.style.cursor = current.seleccionandoPunto ? 'crosshair' : pointer?.dragged ? 'grabbing' : hovered && (hovered.kind === 'vehiculo' || hovered.kind === 'almacen' || (hovered.kind === 'pedido' && hovered.item.vehiculoId)) ? 'pointer' : 'grab'
       frame = requestAnimationFrame(draw)
     }
 
@@ -370,7 +371,7 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
         if (scene.current.seleccionandoPunto) choosePoint(at)
         else {
           const hit = hitAt(at)
-          scene.current.onSelect(hit?.kind === 'vehiculo' ? hit.item.id : hit?.kind === 'pedido' && hit.item.vehiculoId ? hit.item.vehiculoId : null)
+          scene.current.onSelect(hit?.kind === 'vehiculo' || hit?.kind === 'almacen' ? hit.item.id : hit?.kind === 'pedido' && hit.item.vehiculoId ? hit.item.vehiculoId : null)
         }
       }
       pointer = null
@@ -396,5 +397,5 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     frame = requestAnimationFrame(draw)
     return () => { cancelAnimationFrame(frame); observer.disconnect(); element.removeEventListener('wheel', wheel); element.removeEventListener('pointerdown', down); element.removeEventListener('pointermove', move); element.removeEventListener('pointerup', up); element.removeEventListener('pointercancel', cancel); element.removeEventListener('pointerleave', leave); element.removeEventListener('keydown', key) }
   }, [placeView, zoomAt])
-  return <canvas ref={canvas} className={`logistics-canvas ${seleccionandoPunto ? 'picking-point' : ''}`} tabIndex={0} aria-label={seleccionandoPunto ? 'Elegir coordenadas: haz clic en el mapa o pulsa Enter para elegir el centro; Escape para cancelar.' : 'Mapa logístico interactivo. Pasa el cursor sobre unidades, pedidos, almacenes o bloqueos para ver su detalle; haz clic en una unidad para seguir su ruta. Arrastra para desplazar; usa la rueda o las teclas más y menos para ampliar.'} />
+  return <canvas ref={canvas} className={`logistics-canvas ${seleccionandoPunto ? 'picking-point' : ''}`} tabIndex={0} aria-label={seleccionandoPunto ? 'Elegir coordenadas: haz clic en el mapa o pulsa Enter para elegir el centro; Escape para cancelar.' : 'Mapa logístico interactivo. Pasa el cursor sobre unidades, pedidos, almacenes o bloqueos para ver su detalle; haz clic en una unidad para seguir su ruta o en un almacén para abrir sus envíos. Arrastra para desplazar; usa la rueda o las teclas más y menos para ampliar.'} />
 }

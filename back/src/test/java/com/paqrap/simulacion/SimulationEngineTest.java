@@ -69,11 +69,18 @@ class SimulationEngineTest {
         assertNotNull(enRuta, "Alguna unidad debió salir a repartir");
         VehiculoSim averiado = enRuta;
         List<PedidoSim> suyos = new ArrayList<>(averiado.paradas);
+        for (PedidoSim pedido : suyos) {
+            assertEquals(averiado.almacen.id, pedido.almacenDespacho,
+                    "El pedido debe conservar el almacén desde el que salió realmente");
+            assertEquals(pedido.almacenDespacho, SnapshotMapper.pedido(motor, pedido).get("almacenDespacho"));
+        }
 
         var info = motor.registrarAveria(averiado.id, 2);
         assertEquals(VehiculoSim.Estado.AVERIADO, averiado.estado);
         assertTrue((int) info.get("pedidosReasignados") >= 1);
         assertTrue(suyos.stream().allMatch(p -> p.estado == PedidoSim.Estado.PENDIENTE));
+        assertTrue(suyos.stream().allMatch(p -> p.almacenDespacho == null),
+                "Un pedido liberado no debe seguir figurando en tránsito desde su antiguo almacén");
         assertThrows(IllegalStateException.class, () -> motor.registrarAveria(averiado.id, 1));
 
         for (int i = 0; i < 95; i++) motor.tick(DT_5D); // ~4,2 h

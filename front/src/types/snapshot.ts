@@ -18,6 +18,7 @@ export interface PedidoSnap {
   id: string; clienteId: string; x: number; y: number; cantidad: number; registradoEn: string; deadline: string
   estado: EstadoPedido; vehiculoId: string | null; semaforo: Semaforo
   eta?: string | null; entregadoEn?: string | null; atrasado?: boolean
+  almacenDespacho?: IdAlmacen | null
 }
 export interface AlmacenSnap { id: IdAlmacen; x: number; y: number; stock: number | null; capacidad?: number | null }
 export interface BloqueoSnap { id: string; puntos: [number, number][]; inicio: string; fin: string }

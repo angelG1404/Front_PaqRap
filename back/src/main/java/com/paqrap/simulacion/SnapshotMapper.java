@@ -82,6 +82,7 @@ public final class SnapshotMapper {
         pm.put("deadline", SimTime.formato(p.deadlineHoras));
         pm.put("estado", p.estado.name());
         pm.put("vehiculoId", p.vehiculoId);
+        pm.put("almacenDespacho", p.almacenDespacho);
         pm.put("semaforo", m.semaforo(p));
         pm.put("eta", p.etaHoras == null ? null : SimTime.formato(p.etaHoras));
         pm.put("entregadoEn", p.estado == PedidoSim.Estado.ENTREGADO && p.llegadaHoras >= 0 ? SimTime.formato(p.llegadaHoras) : null);

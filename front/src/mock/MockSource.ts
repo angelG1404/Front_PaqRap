@@ -128,6 +128,7 @@ export class MockSource implements SnapshotSource {
       const [pedido] = pending.splice(index, 1)
       if (stock.stock !== null) stock.stock -= pedido.cantidad
       pedido.vehiculoId = vehicle.id
+      pedido.almacenDespacho = stock.id
       pedido.estado = initial && pending.length < MOCK_CONFIG.pedidosPlanificadosIniciales ? 'PLANIFICADO' : 'EN_RUTA'
       vehicle.estado = pedido.estado === 'PLANIFICADO' ? 'LIBRE' : 'EN_RUTA'
       vehicle.carga = pedido.cantidad

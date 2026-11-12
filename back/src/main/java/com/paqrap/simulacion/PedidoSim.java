@@ -18,6 +18,8 @@ final class PedidoSim {
 
     Estado estado = Estado.PENDIENTE;
     String vehiculoId;
+    /** Almacén del despacho efectivo; se limpia si el pedido vuelve a estar pendiente. */
+    String almacenDespacho;
     /** Llegada estimada al cliente; null si aún no tiene vehículo. */
     Double etaHoras;
     /** Llegada real al cliente (inicio de la entrega); negativo mientras no llega. */
@@ -42,6 +44,7 @@ final class PedidoSim {
     void liberar() {
         estado = Estado.PENDIENTE;
         vehiculoId = null;
+        almacenDespacho = null;
         etaHoras = null;
     }
 }

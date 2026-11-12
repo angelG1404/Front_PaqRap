@@ -1,47 +1,45 @@
-import { useEffect, useState } from 'react'
+import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { FLOTA } from '../config/defaults'
 import { ICONOS_TIPO, NOMBRES_TIPO } from '../config/theme'
 import type { Snapshot, TipoVehiculo } from '../types/snapshot'
-import { formatDuration, formatFechaHora, formatFechaHoraMinuto, formatTranscurrido, readableSimTime } from '../services/simulationTime'
+import { formatDuration, formatFechaHoraMinuto, formatTranscurrido, readableSimTime } from '../services/simulationTime'
 import { useHoraActual } from '../hooks/useHoraActual'
 import { USE_MOCK } from '../services/api'
 import { Icon } from '../components/Icon'
-import { PlanificacionPill } from '../components/PlanificacionPill'
+import { Ocupacion } from '../components/mapa/Ocupacion'
 
-interface Props { snapshot: Snapshot | null; escenario: Snapshot['escenario']; onDetener?: () => void; deteniendo?: boolean }
+interface Props { snapshot: Snapshot | null; escenario: Snapshot['escenario']; onDetener?: () => void; deteniendo?: boolean; acciones?: ReactNode }
 
-/** Cabeceras de página: el componente MapaEnVivo no conoce estos contadores. */
-export function MapPageHeader({ snapshot, escenario, onDetener, deteniendo }: Props) {
-  const [openedAt] = useState(() => Date.now())
-  const [elapsed, setElapsed] = useState(0)
-  useEffect(() => { const timer = setInterval(() => setElapsed(Math.floor((Date.now() - openedAt) / 1000)), 1000); return () => clearInterval(timer) }, [openedAt])
+export function MapPageHeader({ snapshot, escenario, onDetener, deteniendo, acciones }: Props) {
   const ahora = useHoraActual()
   const daily = escenario === 'DIARIO'
   const estado = snapshot?.estado
-  const enCurso = estado === 'EN_CURSO'
-  // La duración real la mide el servidor: es la misma en todos los dispositivos conectados.
-  const duracion = snapshot?.duracionSeg ?? elapsed
   const flota = snapshot?.metricas.flota
-  return <>
-    <header className="map-page-header"><div><p className="breadcrumb">{daily ? 'OPERACIÓN DIARIA' : 'MÓDULO DE SIMULACIÓN'} <span>/</span> <strong>Mapa en Vivo</strong></p></div>{!daily && <div className="map-page-actions"><Link to="/simulacion/parametros" className="back-parameters">← Volver a Parámetros</Link><ol className="steps" aria-label="Pasos de la corrida"><li><span>✓</span>1. Parámetros</li><li className="step-line" aria-hidden="true" /><li className="current" aria-current="step"><span>2</span>2. Mapa <Icon name="map" /></li></ol></div>}</header>
-    <div className="map-summary-bar"><div className="scenario-label"><i /><div><strong>{daily ? 'Operación Diaria' : escenario === '5D' ? 'Simulación 5D' : 'Colapso Logístico'}</strong><span>{daily ? 'Seguimiento continuo' : `Algoritmo ${snapshot?.algoritmo ?? '—'} · Solo lectura`}</span></div></div>
-      {USE_MOCK && <span className="demo-badge">DATOS DE DEMOSTRACIÓN</span>}
-      {!daily && <span className="clock-pill" title="Fecha de inicio de esta corrida; permanece fija."><strong>INICIO:</strong><time dateTime={snapshot?.inicioIso}>{snapshot?.inicioIso ? formatFechaHora(snapshot.inicioIso).split(' ')[0] : '—'}</time></span>}
-      {!daily && onDetener && enCurso && <button type="button" className="stop-button" onClick={onDetener} disabled={deteniendo}><span aria-hidden="true">■</span>{deteniendo ? 'Deteniendo…' : 'Detener'}</button>}
-      <div className="fleet-counters" aria-label="Flota configurada">{FLOTA.map((item) => { const type = item.id.toUpperCase() as TipoVehiculo; return <span key={item.id} title={NOMBRES_TIPO[type]}><Icon name={ICONOS_TIPO[type]} /><strong>{flota?.[item.id] ?? item.cantidad}</strong><span className="sr-only">{NOMBRES_TIPO[type]}</span></span> })}</div>
-      <div className="package-counter"><span>PEDIDOS</span><strong>{snapshot?.metricas.entregados ?? '—'} <i>/</i> {snapshot?.metricas.pedidosTotal ?? '—'}</strong><small>entregados / total</small></div></div>
-    <div className="map-clock-bar">
-      {daily ? <span className="clock-pill"><Icon name="clock" /><strong>HORA LOCAL:</strong><time>{snapshot ? formatFechaHoraMinuto(snapshot.simTimeIso) : '—'}</time></span>
-        : <>
-          <span className="clock-pill sim-now" title="Fecha y hora del momento simulado."><Icon name="clock" /><strong>MOMENTO SIMULADO:</strong><time dateTime={snapshot?.simTimeIso}>{snapshot ? `${formatFechaHoraMinuto(snapshot.simTimeIso)} | ${readableSimTime(snapshot.simTime).replace(/ · .*/, '')}` : '—'}</time></span>
-          <span className="clock-pill sim-elapsed" title="Tiempo simulado desde el inicio de la corrida."><Icon name="clock" /><strong>TRANSCURRIDO SIMULADO:</strong><time>{snapshot ? formatTranscurrido(snapshot.inicioIso, snapshot.simTimeIso) : '—'}</time></span>
-        </>}
-      <span className="clock-pill real-now" title="Fecha y hora actual del dispositivo (momento presente)."><Icon name="clock" /><strong>FECHA-HORA ACTUAL:</strong><time dateTime={ahora}>{formatFechaHoraMinuto(ahora)}</time></span>
-      <span className="clock-pill duration"><Icon name="clock" /><strong>DURACIÓN:</strong><time>{formatDuration(duracion)}</time></span>
-      {!daily && snapshot?.factorVelocidad && <span className="clock-pill speed"><strong>VELOCIDAD:</strong><time>{snapshot.factorVelocidad}x</time></span>}
-      {!daily && snapshot && <span className="clock-pill metrics"><strong>ATRASADOS:</strong><time className={snapshot.metricas.atrasados ? 'late' : ''}>{snapshot.metricas.atrasados}</time><strong>COSTO:</strong><time>S/ {(snapshot.metricas.costoTotal ?? 0).toLocaleString('es-PE', { maximumFractionDigits: 0 })}</time></span>}
-      <PlanificacionPill snapshot={snapshot} />
-      <span className={`run-status ${estado === 'COLAPSADO' ? 'collapsed' : estado === 'FINALIZADO' || estado === 'DETENIDA' ? 'finished' : ''}`}>● ESTADO: {estado === 'COLAPSADO' ? 'DETENIDA / CONGELADA' : estado === 'FINALIZADO' ? 'FINALIZADA' : estado === 'DETENIDA' ? 'DETENIDA POR EL OPERADOR' : estado === 'EN_CURSO' ? 'EN CURSO' : 'CONECTANDO'}</span></div>
-  </>
+  return <div className="workspace-header">
+    <header className="workspace-navigation">
+      <p>{daily ? 'Operación diaria' : 'Módulo de simulación'} <span>/</span> <strong>Mapa en vivo</strong></p>
+      <div>{USE_MOCK && <span className="demo-badge">Demostración</span>}{!daily && <Link to="/simulacion/parametros" className="back-parameters">← Parámetros</Link>}{acciones}</div>
+    </header>
+    <div className="workspace-overview">
+      <div className="workspace-scenario"><h1>{daily ? 'Operación diaria' : escenario === '5D' ? 'Simulación 5D' : 'Colapso logístico'}</h1>
+        <span>Inicio <time dateTime={snapshot?.inicioIso}>{snapshot?.inicioIso ? formatFechaHoraMinuto(snapshot.inicioIso) : '—'}</time></span>
+        <span className={`workspace-status status-${estado ?? 'CONECTANDO'}`}>● {estado === 'COLAPSADO' ? 'Colapsada / congelada' : estado === 'FINALIZADO' ? 'Finalizada' : estado === 'DETENIDA' ? 'Detenida' : estado === 'EN_CURSO' ? 'En curso' : 'Conectando'}</span>
+      </div>
+      <Ocupacion snapshot={snapshot} />
+      {!daily && onDetener && estado === 'EN_CURSO' && <button type="button" className="stop-button" onClick={onDetener} disabled={deteniendo}>■ {deteniendo ? 'Deteniendo…' : 'Detener'}</button>}
+    </div>
+    <div className="workspace-telemetry">
+      <div className="workspace-main-clock"><span>{daily ? 'Fecha y hora actual' : 'Momento simulado'}</span>
+        <time dateTime={daily ? ahora : snapshot?.simTimeIso}>{daily ? formatFechaHoraMinuto(ahora) : snapshot ? formatFechaHoraMinuto(snapshot.simTimeIso) : '—'}{!daily && snapshot && <small> | {readableSimTime(snapshot.simTime).replace(/ · .*/, '')}</small>}</time>
+      </div>
+      <div className="workspace-time-group">
+        {!daily && <div><span>Transcurrido simulado</span><strong>{snapshot ? formatTranscurrido(snapshot.inicioIso, snapshot.simTimeIso) : '—'}</strong></div>}
+        <div><span>{daily ? 'Duración de operación' : 'Duración real'}</span><strong>{snapshot?.duracionSeg !== undefined ? formatDuration(snapshot.duracionSeg) : '—'}</strong></div>
+        {!daily && <div><span>Velocidad</span><strong>{snapshot?.factorVelocidad ? `${snapshot.factorVelocidad}x` : '—'}</strong></div>}
+      </div>
+      <div className="workspace-deliveries"><span>Pedidos entregados</span><strong>{snapshot?.metricas.entregados ?? '—'} / {snapshot?.metricas.pedidosTotal ?? '—'}</strong></div>
+      <div className="workspace-fleet"><span>Flota</span><div>{FLOTA.map((item) => { const tipo = item.id.toUpperCase() as TipoVehiculo; return <span key={item.id} title={NOMBRES_TIPO[tipo]}><Icon name={ICONOS_TIPO[tipo]} />{flota?.[item.id] ?? '—'}<span className="sr-only">{NOMBRES_TIPO[tipo]}</span></span> })}</div></div>
+    </div>
+  </div>
 }
