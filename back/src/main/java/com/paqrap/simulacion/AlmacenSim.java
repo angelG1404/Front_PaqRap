@@ -1,25 +1,26 @@
 package com.paqrap.simulacion;
 
-import com.paqrap.config.ScenarioDefaults;
+import com.paqrap.config.ConfiguracionCorrida;
 
 /** Almacén de la corrida: el central tiene inventario infinito; los intermedios se recargan a las 23:59:59. */
 final class AlmacenSim {
 
     final String id;
     final String nombre;
-    final int x;
-    final int y;
+    /** Ubicación y capacidad se pueden modificar durante la corrida (bajo el candado del motor). */
+    int x;
+    int y;
     final boolean central;
-    final int capacidad;
+    int capacidad;
     int stock;
 
-    AlmacenSim(ScenarioDefaults.AlmacenDef def) {
-        this.id = def.id();
-        this.nombre = def.nombre();
-        this.x = def.x();
-        this.y = def.y();
-        this.central = def.central();
-        this.capacidad = def.central() ? Integer.MAX_VALUE : ScenarioDefaults.CAPACIDAD_INTERMEDIO;
+    AlmacenSim(ConfiguracionCorrida.AlmacenCfg cfg, boolean central) {
+        this.id = cfg.id();
+        this.nombre = cfg.nombre();
+        this.x = cfg.x();
+        this.y = cfg.y();
+        this.central = central;
+        this.capacidad = central ? Integer.MAX_VALUE : cfg.capacidad();
         this.stock = capacidad;
     }
 

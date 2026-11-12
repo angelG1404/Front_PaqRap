@@ -6,6 +6,12 @@ export const ICONOS_TIPO: Record<TipoVehiculo, string> = { AUTO: 'car', MOTO: 'm
 export const NOMBRES_ESTADO_VEHICULO: Record<EstadoVehiculo, string> = { EN_RUTA: 'En ruta', REGRESANDO: 'Regresando', ATENDIENDO: 'Atendiendo', LIBRE: 'Libre', AVERIADO: 'Averiado' }
 export const NOMBRES_ESTADO_PEDIDO: Record<EstadoPedido, string> = { PENDIENTE: 'Pendiente', PLANIFICADO: 'Planificado', EN_RUTA: 'En ruta', ENTREGADO: 'Entregado' }
 export const NOMBRES_AVERIA: Record<1 | 2 | 3, string> = { 1: 'Tipo 1 (menor, 2 h)', 2: 'Tipo 2 (hasta fin del turno siguiente)', 3: 'Tipo 3 (mayor, 48 h + turno 15:00)' }
+/** Cómo fija el sistema el fin de la avería y qué pasa con la unidad (se muestra al registrarla). */
+export const REGLAS_AVERIA: Record<1 | 2 | 3, string> = {
+  1: 'Fin = ocurrencia + 2 h. La unidad queda detenida en el lugar de la avería y vuelve al servicio al terminar.',
+  2: 'Fin = fin del turno siguiente al de la ocurrencia (turnos 07:00, 15:00 y 23:00). A las 4 h la unidad se remolca al Almacén Central.',
+  3: 'Fin = primer inicio de turno de 15:00 posterior a 48 h desde la ocurrencia. A las 4 h la unidad se remolca al Almacén Central.',
+}
 export const MAP_THEME = {
   fondo: '#eef2f7', lienzo: '#fbfcfe', grilla: '#e4eaf1', grillaMayor: '#cfd9e6', borde: '#b9c7d9', almacen: '#072d50', texto: '#233d5f',
   bloqueo: '#d62839', averiado: '#c81e33', entregado: '#9aa8ba',

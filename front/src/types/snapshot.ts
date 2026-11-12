@@ -5,7 +5,18 @@ export type Semaforo = 'VERDE' | 'AMBAR' | 'ROJO'
 export type EstadoCorrida = 'EN_CURSO' | 'FINALIZADO' | 'COLAPSADO' | 'DETENIDA'
 export type IdAlmacen = 'CENTRAL' | 'INTERMEDIO_NOROESTE' | 'INTERMEDIO_ESTE'
 export interface Parada { pedidoId: string; x: number; y: number; eta: string | null; cantidad?: number }
-export interface AveriaSnap { tipo: 1 | 2 | 3; desde: string; hasta: string; remolcado: boolean }
+/** Avería de la unidad en curso (resumen que viaja dentro del vehículo). */
+export interface AveriaSnap { id?: string | null; tipo: 1 | 2 | 3; desde: string; hasta: string; remolcado: boolean }
+export type EstadoAveria = 'ACTIVA' | 'RESUELTA'
+/** Entidad Avería completa: el operador elige unidad y tipo; el motor fija y actualiza el resto. */
+export interface AveriaDetalle {
+  id: string; vehiculoId: string; tipo: 1 | 2 | 3; estado: EstadoAveria
+  ocurrencia: string; ocurrenciaIso: string; fin: string; finIso: string; duracionHoras: number
+  origenX: number; origenY: number
+  /** Ubicación actual: el lugar de la avería hasta el remolque, luego el almacén central. */
+  x: number; y: number
+  remolqueEn: string | null; remolcada: boolean; resueltaEn: string | null; pedidosReasignados: number
+}
 export interface VehiculoSnap {
   id: string; tipo: TipoVehiculo; x: number; y: number; estado: EstadoVehiculo; almacenBase: IdAlmacen
   carga: number; capacidad: number; ruta: [number, number][]; proximaParada: Parada | null; semaforo: Semaforo
@@ -19,8 +30,17 @@ export interface PedidoSnap {
   estado: EstadoPedido; vehiculoId: string | null; semaforo: Semaforo
   eta?: string | null; entregadoEn?: string | null; atrasado?: boolean
   almacenDespacho?: IdAlmacen | null
+  despachadoEn?: string | null
 }
-export interface AlmacenSnap { id: IdAlmacen; x: number; y: number; stock: number | null; capacidad?: number | null }
+export interface ActividadResumen { horas: number; enviosDespachados: number; paquetesDespachados: number; enviosEntregados: number; paquetesEntregados: number }
+/** Actividad de un almacén en las últimas `horas` horas simuladas, con el detalle de cada envío. */
+export interface ActividadAlmacen {
+  almacenId: IdAlmacen; horas: number; desde: string; hasta: string; desdeIso: string; hastaIso: string
+  enviosDespachados: number; paquetesDespachados: number; enviosEntregados: number; paquetesEntregados: number
+  enTransito: number; paquetesEnTransito: number
+  despachados: PedidoSnap[]; entregados: PedidoSnap[]; transito: PedidoSnap[]
+}
+export interface AlmacenSnap { id: IdAlmacen; x: number; y: number; stock: number | null; capacidad?: number | null; actividad?: ActividadResumen }
 export interface BloqueoSnap { id: string; puntos: [number, number][]; inicio: string; fin: string }
 export interface Metricas {
   pedidosTotal: number; entregados: number; enRuta: number; pendientes: number; atrasados: number
@@ -46,6 +66,8 @@ export interface Snapshot {
   pedidos: PedidoSnap[]
   almacenes: AlmacenSnap[]
   bloqueos?: BloqueoSnap[]
+  /** Todas las averías de la corrida, activas y resueltas, de la más reciente a la más antigua. */
+  averias?: AveriaDetalle[]
   metricas: Metricas
   planificacion?: Planificacion
   causa?: string

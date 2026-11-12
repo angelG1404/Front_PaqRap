@@ -39,6 +39,8 @@ final class VehiculoSim {
     double averiaHasta;
     /** Hora en que la unidad averiada se remolca al almacén central; negativo si no aplica. */
     double remolqueEn = -1;
+    /** Avería en curso (con todos sus atributos); null si la unidad no está averiada. */
+    AveriaSim averia;
 
     VehiculoSim(String id, VehicleType tipo, AlmacenSim almacen) {
         this.id = id;

@@ -8,12 +8,24 @@ import java.util.List;
  * Representa un bloqueo vial en la grilla.
  */
 public class Roadblock {
+    private static final java.util.concurrent.atomic.AtomicLong SECUENCIA = new java.util.concurrent.atomic.AtomicLong();
+    /** Identificador único del bloqueo; el router lo usa para recordar distancias por conjunto de bloqueos vigentes. */
+    public final long uid = SECUENCIA.incrementAndGet();
     public List<Location> path; // Secuencia de nodos bloqueados
+    /** Rectángulo que contiene todos los nodos bloqueados; permite descartar un bloqueo lejano sin recorrer su camino. */
+    public final int minX, maxX, minY, maxY;
     public double startTimeHours;
     public double endTimeHours;
 
     public Roadblock(List<Location> path, double startTimeHours, double endTimeHours) {
         this.path = decompose(path);
+        int x0 = Integer.MAX_VALUE, x1 = Integer.MIN_VALUE, y0 = Integer.MAX_VALUE, y1 = Integer.MIN_VALUE;
+        for (Location loc : this.path) {
+            int x = (int) Math.round(loc.getX()), y = (int) Math.round(loc.getY());
+            x0 = Math.min(x0, x); x1 = Math.max(x1, x);
+            y0 = Math.min(y0, y); y1 = Math.max(y1, y);
+        }
+        this.minX = x0; this.maxX = x1; this.minY = y0; this.maxY = y1;
         this.startTimeHours = startTimeHours;
         this.endTimeHours = endTimeHours;
     }

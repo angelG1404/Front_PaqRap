@@ -1,5 +1,6 @@
 package com.paqrap.simulacion;
 
+import com.paqrap.config.ScenarioDefaults;
 import com.paqrap.model.VehicleType;
 import com.paqrap.planificador.PlanResultado;
 
@@ -48,6 +49,15 @@ public final class SnapshotMapper {
                 am.put("y", a.y);
                 am.put("stock", a.central ? null : a.stock);
                 am.put("capacidad", a.central ? null : a.capacidad);
+                double ventana = ScenarioDefaults.VENTANA_ACTIVIDAD_HORAS;
+                int[] act = m.resumenActividad(a, ventana);
+                Map<String, Object> actividad = new LinkedHashMap<>();
+                actividad.put("horas", ventana);
+                actividad.put("enviosDespachados", act[0]);
+                actividad.put("paquetesDespachados", act[1]);
+                actividad.put("enviosEntregados", act[2]);
+                actividad.put("paquetesEntregados", act[3]);
+                am.put("actividad", actividad);
                 almacenes.add(am);
             }
             snap.put("almacenes", almacenes);
@@ -63,12 +73,39 @@ public final class SnapshotMapper {
             }
             snap.put("bloqueos", bloqueos);
 
+            List<Map<String, Object>> averias = new ArrayList<>();
+            for (int i = m.averias.size() - 1; i >= 0; i--) averias.add(averia(m, m.averias.get(i)));
+            snap.put("averias", averias);
+
             snap.put("metricas", metricas(m));
             snap.put("planificacion", planificacion(m));
             if (m.causa != null) snap.put("causa", m.causa);
             if (!SimulationEngine.EN_CURSO.equals(m.estado)) snap.put("resumen", resumen(m));
             return snap;
         }
+    }
+
+    /** Todos los atributos de una avería (entidad Averia): se actualizan con el remolque y al resolverse. */
+    static Map<String, Object> averia(SimulationEngine m, AveriaSim a) {
+        Map<String, Object> am = new LinkedHashMap<>();
+        am.put("id", a.id);
+        am.put("vehiculoId", a.vehiculoId);
+        am.put("tipo", a.tipo);
+        am.put("estado", a.estado.name());
+        am.put("ocurrencia", SimTime.formato(a.ocurrenciaHoras));
+        am.put("ocurrenciaIso", SimTime.iso(m.fechaBase, a.ocurrenciaHoras));
+        am.put("fin", SimTime.formato(a.finHoras));
+        am.put("finIso", SimTime.iso(m.fechaBase, a.finHoras));
+        am.put("duracionHoras", Math.round((a.finHoras - a.ocurrenciaHoras) * 100) / 100.0);
+        am.put("origenX", a.origenX);
+        am.put("origenY", a.origenY);
+        am.put("x", a.x);
+        am.put("y", a.y);
+        am.put("remolqueEn", a.remolqueHoras < 0 ? null : SimTime.formato(a.remolqueHoras));
+        am.put("remolcada", a.remolcada);
+        am.put("resueltaEn", a.resueltaHoras < 0 ? null : SimTime.formato(a.resueltaHoras));
+        am.put("pedidosReasignados", a.pedidosReasignados);
+        return am;
     }
 
     static Map<String, Object> pedido(SimulationEngine m, PedidoSim p) {
@@ -83,9 +120,10 @@ public final class SnapshotMapper {
         pm.put("estado", p.estado.name());
         pm.put("vehiculoId", p.vehiculoId);
         pm.put("almacenDespacho", p.almacenDespacho);
+        pm.put("despachadoEn", p.despachoHoras >= 0 ? SimTime.formato(p.despachoHoras) : null);
         pm.put("semaforo", m.semaforo(p));
         pm.put("eta", p.etaHoras == null ? null : SimTime.formato(p.etaHoras));
-        pm.put("entregadoEn", p.estado == PedidoSim.Estado.ENTREGADO && p.llegadaHoras >= 0 ? SimTime.formato(p.llegadaHoras) : null);
+        pm.put("entregadoEn", p.estado == PedidoSim.Estado.ENTREGADO && p.entregadoHoras >= 0 ? SimTime.formato(p.entregadoHoras) : null);
         pm.put("atrasado", p.atrasado(m.ahora));
         return pm;
     }
@@ -100,7 +138,7 @@ public final class SnapshotMapper {
         AlmacenSim base = v.estado == VehiculoSim.Estado.REGRESANDO && v.destinoAlmacen != null ? v.destinoAlmacen : v.almacen;
         vm.put("almacenBase", base.id);
         vm.put("carga", v.carga);
-        vm.put("capacidad", v.tipo.getCapacity());
+        vm.put("capacidad", m.capacidadDe(v.tipo));
         vm.put("kmRecorridos", redondear(v.kmRecorridos));
 
         List<PedidoSim> restantes = new ArrayList<>();
@@ -136,10 +174,11 @@ public final class SnapshotMapper {
 
         if (v.estado == VehiculoSim.Estado.AVERIADO) {
             Map<String, Object> am = new LinkedHashMap<>();
+            am.put("id", v.averia == null ? null : v.averia.id);
             am.put("tipo", v.averiaTipo);
             am.put("desde", SimTime.formato(v.averiaDesde));
             am.put("hasta", SimTime.formato(v.averiaHasta));
-            am.put("remolcado", v.remolqueEn < 0 && v.averiaTipo != 1);
+            am.put("remolcado", v.averia != null ? v.averia.remolcada : v.remolqueEn < 0 && v.averiaTipo != 1);
             vm.put("averia", am);
         } else {
             vm.put("averia", null);

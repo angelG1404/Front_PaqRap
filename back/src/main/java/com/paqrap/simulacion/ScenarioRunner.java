@@ -104,7 +104,7 @@ public class ScenarioRunner {
         String runId = "run-" + clave.toLowerCase() + "-" + System.currentTimeMillis();
         List<BloqueoSim> bloqueos = new ArrayList<>();
         SimulationEngine motor = new SimulationEngine(config, AlgorithmSelector.seleccionar(params.getAlgoritmo(), maxIteraciones),
-                planificador, base, inicioHoras, flota, pedidos, bloqueos);
+                planificador, base, inicioHoras, flota, pedidos, bloqueos, params.getConfiguracion());
         if (lineasBloqueos != null && !lineasBloqueos.isEmpty()) agregarBloqueos(motor, lineasBloqueos);
 
         Corrida corrida = new Corrida(runId, clave, motor, new SimulationClock(factor));

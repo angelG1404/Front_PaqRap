@@ -1,5 +1,6 @@
 package com.paqrap.simulacion;
 
+import com.paqrap.config.ConfiguracionCorrida;
 import com.paqrap.config.ScenarioDefaults;
 import com.paqrap.model.Location;
 import com.paqrap.model.Order;
@@ -28,7 +29,6 @@ public class SimulationEngine {
 
     private static final Logger log = LoggerFactory.getLogger(SimulationEngine.class);
     private static final double HORAS_ENTREGA = 1.0;
-    private static final double HORAS_REMOLQUE = 4.0;
     private static final double HORIZONTE_BLOQUEOS_PLAN = 12.0;
     private static final int MAX_ENTREGADOS_EN_SNAPSHOT = 80;
 
@@ -48,13 +48,18 @@ public class SimulationEngine {
     final List<VehiculoSim> vehiculos = new ArrayList<>();
     final Map<String, PedidoSim> pedidos = new LinkedHashMap<>();
     final ArrayDeque<PedidoSim> entregadosRecientes = new ArrayDeque<>();
+    /** Todas las averías de la corrida (activas y resueltas), de la más antigua a la más reciente. */
+    final List<AveriaSim> averias = new ArrayList<>();
     private final List<Order> pedidosFuturos;
     private int siguienteFuturo;
     final List<BloqueoSim> bloqueos = new ArrayList<>();
     List<BloqueoSim> bloqueosVigentes = List.of();
     private String firmaBloqueos = "";
     private final GridPathfinder rutas = new GridPathfinder();
-    private final int capacidadMaxima;
+    private int capacidadMaxima;
+    /** Reglas de avería, ubicación/capacidad de almacenes y capacidad por tipo de unidad; modificable en caliente. */
+    private ConfiguracionCorrida cfg;
+    private Map<VehicleType, Integer> capacidades = Map.of();
 
     private Future<PlanResultado> planEnCurso;
     private List<String> vehiculosDelPlan = List.of();
@@ -69,6 +74,7 @@ public class SimulationEngine {
     int entregadosTarde;
     private int contadorPedidos;
     private int contadorBloqueos;
+    private int contadorAverias;
 
     String estado = EN_CURSO;
     String causa;
@@ -76,22 +82,44 @@ public class SimulationEngine {
     public SimulationEngine(ScenarioConfig config, PlanningAlgorithm algoritmo, ExecutorService planificador,
                             LocalDateTime fechaBase, double inicioHoras, Map<String, Integer> flota,
                             List<Order> pedidosArchivo, List<BloqueoSim> bloqueosIniciales) {
+        this(config, algoritmo, planificador, fechaBase, inicioHoras, flota, pedidosArchivo, bloqueosIniciales, null);
+    }
+
+    public SimulationEngine(ScenarioConfig config, PlanningAlgorithm algoritmo, ExecutorService planificador,
+                            LocalDateTime fechaBase, double inicioHoras, Map<String, Integer> flota,
+                            List<Order> pedidosArchivo, List<BloqueoSim> bloqueosIniciales, ConfiguracionCorrida configuracion) {
         this.config = config;
+        this.cfg = ConfiguracionCorrida.combinar(ConfiguracionCorrida.porDefecto(), configuracion);
+        this.capacidades = capacidadesDe(cfg);
         this.algoritmo = algoritmo;
         this.planificador = planificador;
         this.fechaBase = fechaBase;
         this.inicioHoras = inicioHoras;
         this.ahora = inicioHoras;
 
-        for (ScenarioDefaults.AlmacenDef def : ScenarioDefaults.ALMACENES) almacenes.add(new AlmacenSim(def));
+        for (ScenarioDefaults.AlmacenDef def : ScenarioDefaults.ALMACENES) almacenes.add(new AlmacenSim(cfg.almacen(def.id()), def.central()));
         crearFlota(flota == null || flota.isEmpty() ? ScenarioDefaults.FLOTA : flota);
-        this.capacidadMaxima = vehiculos.stream().mapToInt(v -> v.tipo.getCapacity()).max().orElse(VehicleType.AUTO.getCapacity());
+        this.capacidadMaxima = capacidadMaximaActual();
 
         List<Order> futuros = new ArrayList<>(pedidosArchivo == null ? List.of() : pedidosArchivo);
         futuros.sort(Comparator.comparingDouble(Order::getPlacementTimeHours));
         this.pedidosFuturos = futuros;
         if (bloqueosIniciales != null) bloqueos.addAll(bloqueosIniciales);
         actualizarBloqueos();
+    }
+
+    private static Map<VehicleType, Integer> capacidadesDe(ConfiguracionCorrida c) {
+        Map<VehicleType, Integer> mapa = new EnumMap<>(VehicleType.class);
+        for (Map.Entry<String, VehicleType> e : ScenarioDefaults.TIPOS_FLOTA.entrySet()) mapa.put(e.getValue(), c.capacidadDe(e.getKey()));
+        return Map.copyOf(mapa);
+    }
+
+    int capacidadDe(VehicleType tipo) {
+        return capacidades.getOrDefault(tipo, tipo.getCapacity());
+    }
+
+    private int capacidadMaximaActual() {
+        return vehiculos.stream().mapToInt(v -> capacidadDe(v.tipo)).max().orElse(capacidades.values().stream().mapToInt(Integer::intValue).max().orElse(1));
     }
 
     /** Unidades repartidas entre los tres almacenes (TA = auto, TM = moto, TB = bicicleta). */
@@ -281,6 +309,7 @@ public class SimulationEngine {
         PedidoSim p = v.paradaActual();
         if (p != null) {
             p.estado = PedidoSim.Estado.ENTREGADO;
+            p.entregadoHoras = t;
             v.carga = Math.max(0, v.carga - p.cantidad);
             entregados++;
             if (p.atrasado(t)) entregadosTarde++;
@@ -323,6 +352,7 @@ public class SimulationEngine {
             p.estado = PedidoSim.Estado.EN_RUTA;
             p.vehiculoId = v.id;
             p.almacenDespacho = v.almacen.id;
+            p.despachoHoras = t;
         }
         v.estado = VehiculoSim.Estado.EN_RUTA;
         PedidoSim primero = plan.get(0);
@@ -391,25 +421,41 @@ public class SimulationEngine {
         v.carga = 0;
         v.destinoAlmacen = null;
 
+        // Atributos de la avería: el operador solo elige la unidad y el tipo; el resto lo fija el motor.
+        //  - ocurrencia = momento simulado actual; ubicación = la de la unidad en ese instante.
+        //  - fin: tipo 1 = ocurrencia + 2 h; tipo 2 = fin del turno siguiente; tipo 3 = primer inicio de turno 15:00 tras 48 h.
+        //  - remolque al central (tipos 2 y 3): ocurrencia + 4 h.
+        ConfiguracionCorrida.AveriasCfg reglas = cfg.averias();
+        double fin = switch (tipo) {
+            case 1 -> ahora + reglas.tipo1().duracionHoras();
+            case 2 -> finDelTurnoSiguiente(ahora, reglas.tipo2().turnosEspera());
+            default -> inicioTurnoTardeTras(ahora + reglas.tipo3().horasMinimas(), reglas.tipo3().horaRetorno());
+        };
+        double horasRemolque = switch (tipo) {
+            case 2 -> reglas.tipo2().horasRemolque();
+            case 3 -> reglas.tipo3().horasRemolque();
+            default -> -1;
+        };
+        // Sin remolque si no lo requiere el tipo o si la unidad vuelve al servicio antes de que corresponda.
+        double remolque = horasRemolque < 0 || ahora + horasRemolque >= fin ? -1 : ahora + horasRemolque;
+        AveriaSim averia = new AveriaSim(String.format("AV-%04d", ++contadorAverias), v.id, tipo, ahora, fin, remolque,
+                v.nodoX(), v.nodoY(), reasignados);
+        averias.add(averia);
+
         v.estado = VehiculoSim.Estado.AVERIADO;
+        v.averia = averia;
         v.averiaTipo = tipo;
         v.averiaDesde = ahora;
-        v.averiaHasta = switch (tipo) {
-            case 1 -> ahora + 2;
-            case 2 -> finDelTurnoSiguiente(ahora);
-            default -> inicioTurnoTardeTras(ahora + 48);
-        };
-        v.remolqueEn = tipo == 1 ? -1 : ahora + HORAS_REMOLQUE;
+        v.averiaHasta = fin;
+        v.remolqueEn = remolque;
         replanificarYa = true;
 
-        Map<String, Object> r = new LinkedHashMap<>();
-        r.put("vehiculoId", v.id);
-        r.put("tipo", tipo);
-        r.put("desde", SimTime.formato(v.averiaDesde));
-        r.put("hasta", SimTime.formato(v.averiaHasta));
-        r.put("hastaIso", SimTime.iso(fechaBase, v.averiaHasta));
-        r.put("pedidosReasignados", reasignados);
-        r.put("remolqueAlCentral", tipo != 1);
+        Map<String, Object> r = SnapshotMapper.averia(this, averia);
+        r.put("remolqueAlCentral", remolque >= 0);
+        // Claves del contrato anterior (la respuesta sigue siendo compatible).
+        r.put("desde", SimTime.formato(averia.ocurrenciaHoras));
+        r.put("hasta", SimTime.formato(averia.finHoras));
+        r.put("hastaIso", SimTime.iso(fechaBase, averia.finHoras));
         return r;
     }
 
@@ -417,6 +463,7 @@ public class SimulationEngine {
         PedidoSim p = v.paradaActual();
         if (p == null) return;
         p.estado = PedidoSim.Estado.ENTREGADO;
+        p.entregadoHoras = ahora;
         entregados++;
         if (p.atrasado(p.llegadaHoras)) entregadosTarde++;
         entregadosRecientes.addFirst(p);
@@ -429,9 +476,19 @@ public class SimulationEngine {
         v.y = central.y;
         v.almacen = central;
         v.remolqueEn = -1;
+        if (v.averia != null) {
+            v.averia.x = central.x;
+            v.averia.y = central.y;
+            v.averia.remolcada = true;
+        }
     }
 
     private void terminarAveria(VehiculoSim v, double t) {
+        if (v.averia != null) {
+            v.averia.estado = AveriaSim.Estado.RESUELTA;
+            v.averia.resueltaHoras = t;
+            v.averia = null;
+        }
         v.averiaTipo = 0;
         v.remolqueEn = -1;
         AlmacenSim aqui = almacenes.stream().filter(a -> a.x == v.x && a.y == v.y).findFirst().orElse(null);
@@ -445,11 +502,22 @@ public class SimulationEngine {
     }
 
     /** Turnos de 8 h que cambian a las 07:00, 15:00 y 23:00. */
+    /** Fin del {@code n}-ésimo turno siguiente al de {@code t} (n = 1: el turno que sigue al actual). */
+    static double finDelTurnoSiguiente(double t, int n) {
+        return finDelTurnoSiguiente(t) + 8.0 * (Math.max(1, n) - 1);
+    }
+
     static double finDelTurnoSiguiente(double t) {
         double dia = Math.floor(t / 24) * 24;
         double h = t - dia;
         double finActual = h < 7 ? dia + 7 : h < 15 ? dia + 15 : h < 23 ? dia + 23 : dia + 31;
         return finActual + 8;
+    }
+
+    /** Primer instante, desde {@code t}, en que inicia un turno a la hora {@code hora} (7, 15 o 23). */
+    static double inicioTurnoTardeTras(double t, int hora) {
+        double candidato = Math.floor(t / 24) * 24 + hora;
+        return candidato < t ? candidato + 24 : candidato;
     }
 
     static double inicioTurnoTardeTras(double t) {
@@ -490,7 +558,7 @@ public class SimulationEngine {
                 .map(b -> b.roadblock).toList();
 
         InstanciaPlanificacion instancia = new InstanciaPlanificacion(ahora, disponibles,
-                candidatos.stream().map(p -> p.order).toList(), bloqueosPlan);
+                candidatos.stream().map(p -> p.order).toList(), bloqueosPlan, capacidades);
         vehiculosDelPlan = disponibles.stream().map(VehiculoDisponible::id).toList();
         ultimaPlanificacion = ahora;
         replanificarYa = false;
@@ -522,7 +590,7 @@ public class SimulationEngine {
                 PedidoSim p = pedidos.get(o.getId());
                 if (p == null || (p.estado != PedidoSim.Estado.PENDIENTE && p.estado != PedidoSim.Estado.PLANIFICADO)) continue;
                 // La capacidad se valida con el tipo real de la unidad (ATS puede proponer otro tipo).
-                if (carga + p.cantidad > v.tipo.getCapacity()) continue;
+                if (carga + p.cantidad > capacidadDe(v.tipo)) continue;
                 if (p.estado == PedidoSim.Estado.PLANIFICADO && p.vehiculoId != null && !p.vehiculoId.equals(vehiculoId)) {
                     VehiculoSim anterior = buscarVehiculo(p.vehiculoId);
                     if (anterior != null) anterior.planPendiente.remove(p);
@@ -673,6 +741,138 @@ public class SimulationEngine {
 
     public synchronized String siguienteIdBloqueo() {
         return String.format("BLQ-%04d", ++contadorBloqueos);
+    }
+
+    /**
+     * Actividad de un almacén en las últimas {@code horas} horas simuladas: envíos que salieron de él y paquetes
+     * entregados cuyo origen es ese almacén, más lo que sigue en tránsito. Un pedido que vuelve a pendiente
+     * (p. ej. por una avería) deja de contar como despachado desde ese almacén.
+     */
+    public synchronized Map<String, Object> actividadAlmacen(String almacenId, double horas) {
+        AlmacenSim almacen = almacenes.stream().filter(a -> a.id.equalsIgnoreCase(almacenId)).findFirst()
+                .orElseThrow(() -> new NoSuchElementException("No existe el almacén " + almacenId + "."));
+        double desde = Math.max(inicioHoras, ahora - horas);
+        List<PedidoSim> despachados = new ArrayList<>(), entregadosLista = new ArrayList<>(), transito = new ArrayList<>();
+        int paqDespachados = 0, paqEntregados = 0, paqTransito = 0;
+        for (PedidoSim p : pedidos.values()) {
+            if (!almacen.id.equals(p.almacenDespacho)) continue;
+            if (p.estado == PedidoSim.Estado.EN_RUTA) {
+                transito.add(p);
+                paqTransito += p.cantidad;
+            }
+            if (p.despachoHoras >= desde - 1e-9) {
+                despachados.add(p);
+                paqDespachados += p.cantidad;
+            }
+            if (p.estado == PedidoSim.Estado.ENTREGADO && p.entregadoHoras >= desde - 1e-9) {
+                entregadosLista.add(p);
+                paqEntregados += p.cantidad;
+            }
+        }
+        // Lo más reciente primero.
+        despachados.sort(Comparator.comparingDouble((PedidoSim p) -> p.despachoHoras).reversed());
+        entregadosLista.sort(Comparator.comparingDouble((PedidoSim p) -> p.entregadoHoras).reversed());
+        transito.sort(Comparator.comparingDouble((PedidoSim p) -> p.despachoHoras).reversed());
+
+        Map<String, Object> r = new LinkedHashMap<>();
+        r.put("almacenId", almacen.id);
+        r.put("horas", horas);
+        r.put("desde", SimTime.formato(desde));
+        r.put("hasta", SimTime.formato(ahora));
+        r.put("desdeIso", SimTime.iso(fechaBase, desde));
+        r.put("hastaIso", SimTime.iso(fechaBase, ahora));
+        r.put("enviosDespachados", despachados.size());
+        r.put("paquetesDespachados", paqDespachados);
+        r.put("enviosEntregados", entregadosLista.size());
+        r.put("paquetesEntregados", paqEntregados);
+        r.put("enTransito", transito.size());
+        r.put("paquetesEnTransito", paqTransito);
+        r.put("despachados", despachados.stream().map(p -> SnapshotMapper.pedido(this, p)).toList());
+        r.put("entregados", entregadosLista.stream().map(p -> SnapshotMapper.pedido(this, p)).toList());
+        r.put("transito", transito.stream().map(p -> SnapshotMapper.pedido(this, p)).toList());
+        return r;
+    }
+
+    /** Conteo de la actividad de un almacén en la ventana por defecto, para el resumen del snapshot. */
+    int[] resumenActividad(AlmacenSim almacen, double horas) {
+        double desde = Math.max(inicioHoras, ahora - horas);
+        int envios = 0, paqEnviados = 0, entregas = 0, paqEntregados = 0;
+        for (PedidoSim p : pedidos.values()) {
+            if (!almacen.id.equals(p.almacenDespacho)) continue;
+            if (p.despachoHoras >= desde - 1e-9) { envios++; paqEnviados += p.cantidad; }
+            if (p.estado == PedidoSim.Estado.ENTREGADO && p.entregadoHoras >= desde - 1e-9) { entregas++; paqEntregados += p.cantidad; }
+        }
+        return new int[]{envios, paqEnviados, entregas, paqEntregados};
+    }
+
+    public synchronized ConfiguracionCorrida configuracion() {
+        return cfg;
+    }
+
+    /**
+     * Modifica la configuración en caliente (parcial: lo que no se envía se conserva). Las reglas de avería rigen
+     * para las averías que se registren desde ahora; la ubicación de un almacén mueve las unidades estacionadas en él y
+     * recalcula el camino de las que regresan; la capacidad de un tipo de unidad rige para las rutas que salgan desde ahora.
+     */
+    public synchronized ConfiguracionCorrida aplicarConfiguracion(ConfiguracionCorrida parcial) {
+        ConfiguracionCorrida nueva = ConfiguracionCorrida.combinar(cfg, parcial);
+        boolean cambioLogistico = false;
+        for (AlmacenSim a : almacenes) {
+            ConfiguracionCorrida.AlmacenCfg c = nueva.almacen(a.id);
+            if (c.x() != a.x || c.y() != a.y) {
+                moverAlmacen(a, c.x(), c.y());
+                cambioLogistico = true;
+            }
+            if (!a.central && c.capacidad() != a.capacidad) {
+                a.capacidad = c.capacidad();
+                a.stock = Math.min(a.stock, a.capacidad);
+                cambioLogistico = true;
+            }
+        }
+        Map<VehicleType, Integer> nuevasCapacidades = capacidadesDe(nueva);
+        if (!nuevasCapacidades.equals(capacidades)) {
+            capacidades = nuevasCapacidades;
+            capacidadMaxima = capacidadMaximaActual();
+            fraccionarPendientesGrandes();
+            cambioLogistico = true;
+        }
+        cfg = nueva;
+        if (cambioLogistico) replanificarYa = true;
+        return cfg;
+    }
+
+    private void moverAlmacen(AlmacenSim a, int x, int y) {
+        a.x = x;
+        a.y = y;
+        for (VehiculoSim v : vehiculos) {
+            if (v.almacen == a && (v.estado == VehiculoSim.Estado.LIBRE || (v.estado == VehiculoSim.Estado.AVERIADO && v.averia != null && v.averia.remolcada))) {
+                v.x = x;
+                v.y = y;
+                if (v.averia != null) {
+                    v.averia.x = x;
+                    v.averia.y = y;
+                }
+            } else if (v.estado == VehiculoSim.Estado.REGRESANDO && v.destinoAlmacen == a) {
+                trazarCamino(v, x, y);
+            }
+        }
+    }
+
+    /** Si una unidad más chica deja de caber un pedido pendiente, se fracciona como al registrarlo. */
+    private void fraccionarPendientesGrandes() {
+        for (PedidoSim p : List.copyOf(pedidos.values())) {
+            if (p.estado == PedidoSim.Estado.PENDIENTE && p.cantidad > capacidadMaxima) {
+                pedidos.remove(p.id);
+                agregarPedido(p.order, p.clienteId);
+            }
+        }
+    }
+
+    /** Averías de la corrida, activas y resueltas, de la más reciente a la más antigua. */
+    public synchronized List<Map<String, Object>> listarAverias() {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        for (int i = averias.size() - 1; i >= 0; i--) lista.add(SnapshotMapper.averia(this, averias.get(i)));
+        return lista;
     }
 
     public synchronized Map<String, Object> buscarPedido(String id) {

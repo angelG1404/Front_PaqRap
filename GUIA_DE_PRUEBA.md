@@ -268,3 +268,11 @@ métricas de costo y distancia, y los estados `AVERIADO` (vehículo) y `DETENIDA
 | «Ya hay una corrida activa…» al iniciar | Solo se permite una corrida por tipo: usa *Ver corrida activa* y **Detener**. |
 | La 5D tarda 45 minutos | Es lo que pide el caso (30–60 min). Para probar rápido usa `PAQRAP_FACTOR_5D=1440`. |
 | Desde el celular no carga | Usa la IP del equipo (no `localhost`) y permite el puerto en el firewall. |
+
+
+## 12. Configuración editable y rendimiento (actualización)
+
+- **Configuración:** en *Parámetros* se editan la capacidad de cada tipo de unidad, la ubicación y capacidad de los almacenes y las reglas de los tres tipos de avería. Con la corrida en marcha, el botón **Configuración** del mapa abre el mismo editor y aplica los cambios en caliente (`PUT /api/escenarios/{runId}/configuracion`). Ver `REQUISITOS_CLIENTE.md`.
+- **Orden de unidades:** en la pestaña *Vehículos*, la barra *Ordenar por ocupación* alterna mayor a menor, menor a mayor e ID.
+- **Pruebas:** `mvn test` ejecuta 19 pruebas (≈ 10 s); `RendimientoMotorTest` imprime los tiempos del tick, del snapshot y de ALNS.
+- **Rendimiento:** el cálculo de distancias con bloqueos (A*) ahora descarta bloqueos lejanos, usa arreglos primitivos y recuerda distancias por conjunto de bloqueos vigentes. ALNS con 250 iteraciones sobre 40 pedidos y 11 bloqueos pasó de 142 s a 1,0 s; en el presupuesto de 1,5 s por planificación caben muchas más iteraciones.

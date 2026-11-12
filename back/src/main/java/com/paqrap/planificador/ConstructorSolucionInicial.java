@@ -26,7 +26,9 @@ final class ConstructorSolucionInicial {
             Location.LocationType tipo = "CENTRAL".equals(v.almacenId())
                     ? Location.LocationType.CENTRAL_WAREHOUSE : Location.LocationType.INTERMEDIATE_WAREHOUSE;
             Location deposito = new Location(v.almacenId(), v.almacenId(), v.x(), v.y(), tipo);
-            Route ruta = new Route(new Vehicle(v.id(), v.tipo(), deposito), deposito, v.disponibleDesdeHoras());
+            Vehicle unidad = new Vehicle(v.id(), v.tipo(), deposito);
+            if (!instancia.capacidades().isEmpty()) unidad.setCapacities(instancia.capacidades());
+            Route ruta = new Route(unidad, deposito, v.disponibleDesdeHoras());
             ruta.setRoadblocks(instancia.bloqueos());
             rutas.add(ruta);
         }

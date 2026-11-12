@@ -7,7 +7,8 @@ import { localIso } from '../services/simulationTime'
 import { RegistroPedidoForm, type CoordenadasPedido } from '../components/RegistroPedidoForm'
 import { RegistroAveriaForm } from '../components/RegistroAveriaForm'
 import { MapPageHeader } from './MapPageHeader'
-import { ALGORITMOS, FLOTA, GRID_ALTO, GRID_ANCHO, UMBRALES_SEMAFORO } from '../config/defaults'
+import { ALGORITMOS, FLOTA, GRID_ALTO, GRID_ANCHO, UMBRALES_SEMAFORO, crearConfiguracionPorDefecto } from '../config/defaults'
+import { BotonConfiguracion } from '../components/ConfiguracionCorridaModal'
 import { Icon } from '../components/Icon'
 import { useSimulation } from '../context/SimulationContext'
 import './operacion-diaria.css'
@@ -51,6 +52,7 @@ export function DailyOperationPage() {
       const res = await iniciarEscenario('DIARIO', {
         escenario: 'DIARIO', algoritmo, fechaInicio: localIso(new Date()), umbralesSemaforo: UMBRALES_SEMAFORO,
         flota: { auto: FLOTA[0].cantidad, moto: FLOTA[1].cantidad, bicicleta: FLOTA[2].cantidad },
+        configuracion: crearConfiguracionPorDefecto(),
       })
       setActiveRunId(res.runId)
       setRunId('DIARIO', res.runId)
@@ -92,7 +94,7 @@ export function DailyOperationPage() {
   }
 
   return <div className="map-page daily-page">
-    <MapPageHeader snapshot={snapshot} escenario="DIARIO" acciones={!USE_MOCK && <label className="upload-pill"><Icon name="upload" />Cargar bloqueos<input type="file" accept=".txt,.csv" className="sr-only" onChange={(e) => { void handleBloqueos(e.target.files?.[0]); e.target.value = '' }} /></label>} />
+    <MapPageHeader snapshot={snapshot} escenario="DIARIO" acciones={!USE_MOCK && <><BotonConfiguracion runId={activeRunId} /><label className="upload-pill"><Icon name="upload" />Cargar bloqueos<input type="file" accept=".txt,.csv" className="sr-only" onChange={(e) => { void handleBloqueos(e.target.files?.[0]); e.target.value = '' }} /></label></>} />
     {avisoBloqueos && <p role="status" className={`workspace-feedback ${avisoBloqueos.error ? 'error' : ''}`}>{avisoBloqueos.texto}</p>}
     <MapaEnVivo snapshot={snapshot} estadoConexion={estadoConexion} escenario="DIARIO" etiquetaRegistro="Registrar pedido" seleccionandoPunto={eligiendo} puntoElegido={puntoElegido} onElegirPunto={(pickedX, pickedY) => { setCoordenadas({ x: String(pickedX), y: String(pickedY) }); setEligiendo(false) }} onCancelarSeleccion={() => setEligiendo(false)}
       panelRegistrar={<RegistroPedidoForm coordenadas={coordenadas} setCoordenadas={setCoordenadas} eligiendo={eligiendo} onElegir={() => setEligiendo(true)} onCancelar={() => setEligiendo(false)} disponible={disponible} />}

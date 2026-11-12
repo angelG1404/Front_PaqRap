@@ -9,6 +9,15 @@ import java.util.*;
  */
 public class AStarGridRouter {
 
+    /**
+     * Distancias ya calculadas, por conjunto de bloqueos vigentes y par origen-destino. Las metaheurísticas evalúan
+     * miles de rutas que repiten los mismos pocos tramos (pedidos y almacenes), así que casi todo es un acierto.
+     * Se vacía al superar {@link #MAX_ENTRADAS} para acotar la memoria.
+     */
+    private static final java.util.Map<Long, java.util.Map<Integer, Double>> CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger ENTRADAS = new java.util.concurrent.atomic.AtomicInteger();
+    private static final int MAX_ENTRADAS = 400_000;
+
     private final int gridRows;
     private final int gridCols;
 
@@ -49,67 +58,97 @@ public class AStarGridRouter {
         }
     }
 
+    /**
+     * Distancia en nodos entre dos ubicaciones evitando los bloqueos vigentes en {@code currentTime}.
+     * Es el camino caliente de las metaheurísticas (se llama por cada tramo de cada ruta evaluada), así que:
+     * primero se descarta sin asignar memoria que algún bloqueo vigente caiga dentro del rectángulo origen-destino
+     * (entonces la distancia Manhattan es exacta) y, solo si cae, se ejecuta un A* sobre arreglos primitivos.
+     */
     public double calculateDistance(Location start, Location end, List<Roadblock> roadblocks, double currentTime) {
         int startX = (int) Math.round(start.getX());
         int startY = (int) Math.round(start.getY());
         int endX = (int) Math.round(end.getX());
         int endY = (int) Math.round(end.getY());
-
-        // Pre-calcular nodos bloqueados para el currentTime dado
-        Set<String> blockedNodes = new HashSet<>();
-        boolean blockInsideBox = false;
         int minX = Math.min(startX, endX), maxX = Math.max(startX, endX);
         int minY = Math.min(startY, endY), maxY = Math.max(startY, endY);
+
+        boolean bloqueoEnElCamino = false;
+        long firma = 17; // identifica el conjunto de bloqueos vigentes (los uid son únicos)
         for (Roadblock rb : roadblocks) {
-            if (currentTime >= rb.startTimeHours && currentTime <= rb.endTimeHours) {
-                for (Location loc : rb.path) {
-                    int bx = (int) Math.round(loc.getX());
-                    int by = (int) Math.round(loc.getY());
-                    blockedNodes.add(bx + "," + by);
-                    if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) blockInsideBox = true;
+            if (currentTime < rb.startTimeHours || currentTime > rb.endTimeHours) continue;
+            firma = (firma ^ rb.uid) * 0x9E3779B97F4A7C15L + (firma >>> 29);
+            if (bloqueoEnElCamino || rb.maxX < minX || rb.minX > maxX || rb.maxY < minY || rb.minY > maxY) continue;
+            for (Location loc : rb.path) {
+                int bx = (int) Math.round(loc.getX());
+                int by = (int) Math.round(loc.getY());
+                if (bx >= minX && bx <= maxX && by >= minY && by <= maxY) {
+                    bloqueoEnElCamino = true;
+                    break;
                 }
             }
         }
+        if (!bloqueoEnElCamino) return (maxX - minX) + (maxY - minY);
 
-        // Sin bloqueos dentro del rectángulo origen-destino, la distancia Manhattan es alcanzable (atajo exacto).
-        if (!blockInsideBox) {
-            return (maxX - minX) + (maxY - minY);
+        // Fuera de la grilla (no debería ocurrir) la clave empaquetada no es única: se calcula sin recordar.
+        if (startX < 0 || startX > 127 || endX < 0 || endX > 127 || startY < 0 || startY > 63 || endY < 0 || endY > 63) {
+            return distanciaConRodeo(startX, startY, endX, endY, roadblocks, currentTime);
         }
+        int clave = (((startX * 64 + startY) * 128 + endX) * 64 + endY);
+        java.util.Map<Integer, Double> porFirma = CACHE.computeIfAbsent(firma, f -> new java.util.concurrent.ConcurrentHashMap<>());
+        Double guardada = porFirma.get(clave);
+        if (guardada != null) return guardada;
+        double distancia = distanciaConRodeo(startX, startY, endX, endY, roadblocks, currentTime);
+        if (ENTRADAS.incrementAndGet() > MAX_ENTRADAS) {
+            CACHE.clear();
+            ENTRADAS.set(0);
+        } else {
+            porFirma.put(clave, distancia);
+        }
+        return distancia;
+    }
 
-        PriorityQueue<Node> openSet = new PriorityQueue<>();
-        Map<String, Double> gScore = new HashMap<>();
+    /** A* sobre arreglos primitivos para cuando algún bloqueo vigente cae dentro del rectángulo origen-destino. */
+    private double distanciaConRodeo(int startX, int startY, int endX, int endY, List<Roadblock> roadblocks, double currentTime) {
 
-        // El nodo inicial no puede estar bloqueado. Si lo está, es un error de escenario o el vehículo no puede empezar ahí.
-        if (blockedNodes.contains(startX + "," + startY)) {
+        boolean[] bloqueado = new boolean[gridRows * gridCols];
+        for (Roadblock rb : roadblocks) {
+            if (currentTime < rb.startTimeHours || currentTime > rb.endTimeHours) continue;
+            for (Location loc : rb.path) {
+                int bx = (int) Math.round(loc.getX());
+                int by = (int) Math.round(loc.getY());
+                if (bx >= 0 && bx < gridRows && by >= 0 && by < gridCols) bloqueado[bx * gridCols + by] = true;
+            }
+        }
+        // El nodo inicial no puede estar bloqueado: la unidad no puede empezar ahí.
+        if (startX < 0 || startX >= gridRows || startY < 0 || startY >= gridCols || bloqueado[startX * gridCols + startY]) {
             return Double.POSITIVE_INFINITY;
         }
 
-        Node startNode = new Node(startX, startY, 0, manhattan(startX, startY, endX, endY));
-        openSet.add(startNode);
-        gScore.put(startX + "," + startY, 0.0);
-
-        while (!openSet.isEmpty()) {
-            Node current = openSet.poll();
-
-            if (current.x == endX && current.y == endY) {
-                return current.g;
-            }
-
-            int[][] neighbors = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
-            for (int[] n : neighbors) {
-                int nextX = current.x + n[0];
-                int nextY = current.y + n[1];
-
-                if (nextX >= 0 && nextX < gridRows && nextY >= 0 && nextY < gridCols) {
-                    // Check if node is blocked
-                    if (blockedNodes.contains(nextX + "," + nextY)) continue;
-
-                    double tentativeG = current.g + 1;
-                    String key = nextX + "," + nextY;
-                    if (tentativeG < gScore.getOrDefault(key, Double.POSITIVE_INFINITY)) {
-                        gScore.put(key, tentativeG);
-                        openSet.add(new Node(nextX, nextY, tentativeG, manhattan(nextX, nextY, endX, endY)));
-                    }
+        int total = gridRows * gridCols;
+        int[] g = new int[total];
+        java.util.Arrays.fill(g, Integer.MAX_VALUE);
+        // Cola de prioridad por f = g + h con desempate estable: (f, índice) empaquetados en un long.
+        PriorityQueue<Long> abiertos = new PriorityQueue<>();
+        int inicio = startX * gridCols + startY;
+        g[inicio] = 0;
+        abiertos.add(((long) (Math.abs(startX - endX) + Math.abs(startY - endY)) << 32) | inicio);
+        final int[] dx = {0, 0, 1, -1}, dy = {1, -1, 0, 0};
+        while (!abiertos.isEmpty()) {
+            long cabeza = abiertos.poll();
+            int idx = (int) (cabeza & 0xFFFFFFFFL);
+            int x = idx / gridCols, y = idx % gridCols;
+            int gActual = g[idx];
+            if (x == endX && y == endY) return gActual;
+            if ((int) (cabeza >>> 32) > gActual + Math.abs(x - endX) + Math.abs(y - endY)) continue; // entrada vieja
+            for (int d = 0; d < 4; d++) {
+                int nx = x + dx[d], ny = y + dy[d];
+                if (nx < 0 || nx >= gridRows || ny < 0 || ny >= gridCols) continue;
+                int nidx = nx * gridCols + ny;
+                if (bloqueado[nidx]) continue;
+                int ng = gActual + 1;
+                if (ng < g[nidx]) {
+                    g[nidx] = ng;
+                    abiertos.add(((long) (ng + Math.abs(nx - endX) + Math.abs(ny - endY)) << 32) | nidx);
                 }
             }
         }

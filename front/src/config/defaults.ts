@@ -1,4 +1,4 @@
-import type { ParametrosCorrida } from '../types'
+import type { ConfigAverias, ConfiguracionCorrida, ParametrosCorrida } from '../types'
 import { COLORES_TIPO } from './theme'
 
 export const GRID_ANCHO = 70
@@ -37,6 +37,21 @@ export const MODOS = [
   { id: 'COLAPSO', nombre: 'Colapso Logístico', descripcion: 'Prueba de saturación y congelamiento por SLA' },
 ] as const
 export const ALGORITMOS = ['ALNS', 'ATS'] as const
+/** Turnos de 8 h: inician a las 07:00, 15:00 y 23:00 (el turno de regreso del tipo 3 es uno de ellos). */
+export const INICIOS_DE_TURNO = [7, 15, 23] as const
+export const AVERIAS_POR_DEFECTO: ConfigAverias = {
+  tipo1: { duracionHoras: 2 },
+  tipo2: { turnosEspera: 1, horasRemolque: 4 },
+  tipo3: { horasMinimas: 48, horaRetorno: 15, horasRemolque: 4 },
+}
+/** Valores del enunciado; el backend usa los mismos como respaldo cuando no se envía configuración. */
+export function crearConfiguracionPorDefecto(): ConfiguracionCorrida {
+  return {
+    averias: structuredClone(AVERIAS_POR_DEFECTO),
+    almacenes: ALMACENES.map((a) => ({ id: a.id, nombre: a.nombre, x: a.x, y: a.y, capacidad: Number.isFinite(a.capacidad) ? a.capacidad : null })),
+    vehiculos: FLOTA.map((f) => ({ tipo: f.id, capacidad: f.capacidad, velocidadKmH: f.velocidad, costoPorKm: f.costoKm })),
+  }
+}
 export function crearParametrosIniciales(): ParametrosCorrida {
   // Solo la fecha: el día 01 del archivo de pedidos corresponde a las 00:00 de este día.
   const ahora = new Date()
@@ -45,5 +60,6 @@ export function crearParametrosIniciales(): ParametrosCorrida {
     escenario: '5D', algoritmo: 'ALNS', fechaInicio: local,
     umbralesSemaforo: { ...UMBRALES_SEMAFORO },
     flota: { auto: FLOTA[0].cantidad, moto: FLOTA[1].cantidad, bicicleta: FLOTA[2].cantidad },
+    configuracion: crearConfiguracionPorDefecto(),
   }
 }

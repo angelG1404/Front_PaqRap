@@ -1,6 +1,6 @@
-import type { ArchivoSubido, EscenarioActivoInfo, MapaBase, ParametrosCorrida } from '../types'
+import type { ArchivoSubido, ConfiguracionCorrida, EscenarioActivoInfo, MapaBase, ParametrosCorrida } from '../types'
 import type { NuevoPedido, PedidoRegistrado } from '../types/pedidos'
-import type { Snapshot } from '../types/snapshot'
+import type { ActividadAlmacen, AveriaDetalle, Snapshot } from '../types/snapshot'
 import { validarNuevoPedido } from './validarNuevoPedido'
 import { dailySource } from '../mock/dailySource'
 import { ALMACENES, GRID_ALTO, GRID_ANCHO, UMBRALES_SEMAFORO } from '../config/defaults'
@@ -23,7 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-export interface AveriaRegistrada { vehiculoId: string; tipo: number; desde: string; hasta: string; hastaIso: string; pedidosReasignados: number; remolqueAlCentral: boolean }
+export type AveriaRegistrada = AveriaDetalle & { desde: string; hasta: string; hastaIso: string; remolqueAlCentral: boolean }
 
 const mockActiveRuns: Map<string, EscenarioActivoInfo> = new Map([
   ['DIARIO', { runId: 'mock-diario-default', escenario: 'DIARIO', estado: 'EN_CURSO', topic: '/topic/sim/mock-diario-default' }]
@@ -84,6 +84,25 @@ export async function cargarBloqueosEnCorrida(runId: string, file: File): Promis
 export async function registrarAveria(runId: string, vehiculoId: string, tipo: 1 | 2 | 3): Promise<AveriaRegistrada> {
   if (USE_MOCK) throw new Error('Las averías requieren el backend real (VITE_USE_MOCK=false).')
   return solicitar(`/api/escenarios/${runId}/averias`, json({ vehiculoId, tipo }), 'No se pudo conectar con el servidor.', 'No se pudo registrar la avería', 201)
+}
+
+/** Envíos despachados y paquetes entregados por un almacén en las últimas `horas` horas simuladas. */
+export async function getActividadAlmacen(runId: string, almacenId: string, horas?: number): Promise<ActividadAlmacen> {
+  if (USE_MOCK) throw new Error('La actividad por almacén requiere el backend real (VITE_USE_MOCK=false).')
+  const consulta = horas ? `?horas=${horas}` : ''
+  return solicitar(`/api/escenarios/${runId}/almacenes/${almacenId}/actividad${consulta}`, undefined, 'No se pudo conectar con el servidor.', 'No se pudo obtener la actividad del almacén')
+}
+
+/** Configuración vigente de una corrida: reglas de avería, almacenes y capacidades de unidad. */
+export async function getConfiguracion(runId: string): Promise<ConfiguracionCorrida> {
+  if (USE_MOCK) throw new Error('La configuración requiere el backend real (VITE_USE_MOCK=false).')
+  return solicitar(`/api/escenarios/${runId}/configuracion`, undefined, 'No se pudo conectar con el servidor.', 'No se pudo obtener la configuración')
+}
+
+/** Modifica la configuración de una corrida en curso; devuelve la configuración resultante. */
+export async function actualizarConfiguracion(runId: string, configuracion: Partial<ConfiguracionCorrida>): Promise<ConfiguracionCorrida> {
+  if (USE_MOCK) throw new Error('La configuración requiere el backend real (VITE_USE_MOCK=false).')
+  return solicitar(`/api/escenarios/${runId}/configuracion`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(configuracion) }, 'No se pudo conectar con el servidor.', 'No se pudo guardar la configuración')
 }
 
 export async function detenerCorrida(runId: string): Promise<EscenarioActivoInfo> {

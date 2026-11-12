@@ -10,6 +10,8 @@ public class Vehicle {
     //CAMBIO ITERACION 01
     private boolean available = true;
     private Breakdown activeBreakdown = null;
+    /** Capacidad por tipo definida para la corrida; null usa la capacidad base de {@link VehicleType}. */
+    private java.util.Map<VehicleType, Integer> capacities;
 
     public Vehicle(String id, VehicleType type, Location startDepot) {
         this.id = id;
@@ -40,7 +42,19 @@ public class Vehicle {
     }
 
     public int getCapacity() {
+        if (capacities != null) {
+            Integer configurada = capacities.get(type);
+            if (configurada != null) return configurada;
+        }
         return type.getCapacity();
+    }
+
+    public java.util.Map<VehicleType, Integer> getCapacities() {
+        return capacities;
+    }
+
+    public void setCapacities(java.util.Map<VehicleType, Integer> capacities) {
+        this.capacities = capacities;
     }
 
     public double getSpeedKmH() {

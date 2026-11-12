@@ -37,8 +37,11 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
   const hover = useRef<Point | null>(null)
 
   useEffect(() => { if (seleccionandoPunto) canvas.current?.focus() }, [seleccionandoPunto])
+  /** Solo se redibuja cuando algo cambió (snapshot, vista, selección, cursor) o mientras una unidad se anima. */
+  const dirty = useRef(true)
 
   const placeView = useCallback(() => {
+    dirty.current = true
     const v = view.current
     v.scale = fit.current * zoom.current
     v.offsetX = v.width / 2 - focus.current[0] * v.scale
@@ -81,10 +84,12 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     }
     motions.current = next
     scene.current = { snapshot, selectedId, onSelect, capas, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido }
+    dirty.current = true
   }, [snapshot]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     scene.current = { ...scene.current, selectedId, onSelect, capas, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido }
+    dirty.current = true
   }, [selectedId, onSelect, capas, seleccionandoPunto, onElegirPunto, onCancelarSeleccion, puntoElegido])
 
   useEffect(() => {
@@ -239,6 +244,10 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     }
 
     function draw(now: number) {
+      let animando = false
+      for (const motion of motions.current.values()) if (motion.duration > 0 && now - motion.start < motion.duration + 100) { animando = true; break }
+      if (!dirty.current && !animando) { frame = requestAnimationFrame(draw); return }
+      dirty.current = false
       const v = view.current, current = scene.current, s = current.snapshot, capasActivas = current.capas
       const dpr = window.devicePixelRatio || 1
       if (element.width !== Math.round(v.width * dpr)) resize()
@@ -354,11 +363,13 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
     function wheel(event: WheelEvent) { event.preventDefault(); zoomAt(Math.exp(-event.deltaY * 0.0015), point(event)) }
     function down(event: PointerEvent) {
       if (event.button !== 0) return
+      dirty.current = true
       element.setPointerCapture(event.pointerId)
       pointer = { x: event.clientX, y: event.clientY, focus: [...focus.current], dragged: false }
     }
     function move(event: PointerEvent) {
       hover.current = point(event)
+      dirty.current = true
       if (!pointer) return
       const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y
       if (Math.hypot(dx, dy) > 4) pointer.dragged = true
@@ -378,12 +389,13 @@ export function MapCanvas({ snapshot, selectedId, onSelect, ref, capas, seleccio
       if (element.hasPointerCapture(event.pointerId)) element.releasePointerCapture(event.pointerId)
     }
     function cancel() { pointer = null }
-    function leave() { hover.current = null }
+    function leave() { hover.current = null; dirty.current = true }
     function choosePoint(screen: Point) {
       const [x, y] = unproject(screen, view.current)
       scene.current.onElegirPunto?.(Math.max(0, Math.min(GRID_ANCHO, Math.round(x))), Math.max(0, Math.min(GRID_ALTO, Math.round(y))))
     }
     function key(event: KeyboardEvent) {
+      dirty.current = true
       if (event.key === 'Escape') { scene.current.onSelect(null); scene.current.onCancelarSeleccion?.() }
       else if (event.key === 'Enter' && scene.current.seleccionandoPunto) { event.preventDefault(); choosePoint([view.current.width / 2, view.current.height / 2]) }
       else if (event.key === '+' || event.key === '=') zoomAt(1.25)

@@ -12,6 +12,8 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.concurrent.AbstractExecutorService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -90,6 +92,85 @@ class SimulationEngineTest {
         for (int i = 0; i < 300; i++) motor.tick(DT_5D);
         assertTrue(suyos.stream().allMatch(p -> p.estado == PedidoSim.Estado.ENTREGADO || !averiado.id.equals(p.vehiculoId)),
                 "Los pedidos de la unidad averiada los atienden otras unidades");
+    }
+
+    @Test
+    void almacenReportaEnviosYEntregasDeLasUltimas4Horas() throws IOException {
+        SimulationEngine motor = motor(ScenarioConfig.SIM_5D, "ALNS", pedidos("ventas.txt"), List.of());
+        for (int i = 0; i < 1200; i++) motor.tick(DT_5D); // ~53 h simuladas
+        double ahora = motor.getAhora();
+        boolean hubo = false;
+        for (AlmacenSim almacen : motor.almacenes) {
+            Map<String, Object> actividad = motor.actividadAlmacen(almacen.id, 4);
+            List<?> despachados = (List<?>) actividad.get("despachados");
+            List<?> entregados = (List<?>) actividad.get("entregados");
+            assertEquals(despachados.size(), actividad.get("enviosDespachados"));
+            assertEquals(entregados.size(), actividad.get("enviosEntregados"));
+            // Nada fuera de la ventana: cada pedido listado salió o se entregó en las últimas 4 h.
+            for (PedidoSim p : motor.pedidos.values()) {
+                if (!almacen.id.equals(p.almacenDespacho)) continue;
+                boolean enVentanaDespacho = p.despachoHoras >= ahora - 4 - 1e-9;
+                assertEquals(enVentanaDespacho, despachados.stream().anyMatch(m -> p.id.equals(((Map<?, ?>) m).get("id"))));
+                boolean enVentanaEntrega = p.estado == PedidoSim.Estado.ENTREGADO && p.entregadoHoras >= ahora - 4 - 1e-9;
+                assertEquals(enVentanaEntrega, entregados.stream().anyMatch(m -> p.id.equals(((Map<?, ?>) m).get("id"))));
+                hubo |= enVentanaDespacho || enVentanaEntrega;
+            }
+        }
+        assertTrue(hubo || motor.pedidos.size() > 0, "La corrida debió mover pedidos");
+        // Una ventana mayor nunca tiene menos envíos que una menor.
+        for (AlmacenSim almacen : motor.almacenes) {
+            assertTrue((int) motor.actividadAlmacen(almacen.id, 24).get("enviosDespachados")
+                    >= (int) motor.actividadAlmacen(almacen.id, 4).get("enviosDespachados"));
+        }
+        assertThrows(NoSuchElementException.class, () -> motor.actividadAlmacen("NO_EXISTE", 4));
+    }
+
+    @Test
+    void cadaTipoDeAveriaFijaYActualizaSusAtributos() throws IOException {
+        for (int tipo = 1; tipo <= 3; tipo++) {
+            SimulationEngine motor = motor(ScenarioConfig.SIM_5D, "GREEDY", pedidos("ventas_small.txt"), List.of());
+            for (int i = 0; i < 40; i++) motor.tick(DT_5D); // ~1,8 h: la hora no es redonda
+            double ocurrencia = motor.getAhora();
+            Map<String, Object> reg = motor.registrarAveria("TA01", tipo);
+            AveriaSim a = motor.averias.get(0);
+
+            // Atributos fijados al registrar.
+            assertEquals("AV-0001", a.id);
+            assertEquals("TA01", a.vehiculoId);
+            assertEquals(tipo, a.tipo);
+            assertEquals(AveriaSim.Estado.ACTIVA, a.estado);
+            assertEquals(ocurrencia, a.ocurrenciaHoras, 1e-9);
+            assertEquals(reg.get("ocurrencia"), SimTime.formato(ocurrencia));
+            double esperadoFin = switch (tipo) {
+                case 1 -> ocurrencia + 2;
+                case 2 -> SimulationEngine.finDelTurnoSiguiente(ocurrencia);
+                default -> SimulationEngine.inicioTurnoTardeTras(ocurrencia + 48);
+            };
+            assertEquals(esperadoFin, a.finHoras, 1e-9, "fin de la avería tipo " + tipo);
+            assertEquals(tipo == 1 ? -1 : ocurrencia + 4, a.remolqueHoras, 1e-9);
+            assertEquals(a.origenX, a.x);
+
+            // Actualización: el remolque mueve la unidad al central (solo tipos 2 y 3).
+            double hastaRemolque = tipo == 1 ? 0 : ocurrencia + 4.2 - motor.getAhora();
+            for (int i = 0; i < Math.ceil(hastaRemolque / DT_5D); i++) motor.tick(DT_5D);
+            if (tipo == 1) {
+                assertFalse(a.remolcada);
+            } else {
+                assertTrue(a.remolcada, "tipo " + tipo + " se remolca a las 4 h");
+                assertEquals(ScenarioDefaults.ALMACENES.get(0).x(), a.x);
+                assertEquals(ScenarioDefaults.ALMACENES.get(0).y(), a.y);
+                assertEquals(AveriaSim.Estado.ACTIVA, a.estado);
+            }
+
+            // Resolución: pasa a RESUELTA con su hora y la unidad vuelve al servicio.
+            for (int i = 0; i < 5000 && a.activa(); i++) motor.tick(DT_5D);
+            assertEquals(AveriaSim.Estado.RESUELTA, a.estado, "tipo " + tipo);
+            assertEquals(a.finHoras, a.resueltaHoras, DT_5D * 2);
+            VehiculoSim v = motor.vehiculos.stream().filter(u -> u.id.equals("TA01")).findFirst().orElseThrow();
+            assertNull(v.averia);
+            assertNotEquals(VehiculoSim.Estado.AVERIADO, v.estado);
+            assertEquals(1, motor.listarAverias().size(), "la avería resuelta queda en el historial");
+        }
     }
 
     @Test

@@ -1,12 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ALGORITMOS, ALMACENES, FLOTA, GRID_ALTO, GRID_ANCHO, HORIZONTE_5D, MODOS, PORCENTAJE_MAXIMO } from '../config/defaults'
+import { ALGORITMOS, FLOTA, GRID_ALTO, GRID_ANCHO, HORIZONTE_5D, MODOS, PORCENTAJE_MAXIMO } from '../config/defaults'
 import { useSimulation } from '../context/SimulationContext'
 import { Card } from '../components/Card'
 import { Icon } from '../components/Icon'
 import { OrdersUpload } from '../components/OrdersUpload'
+import { AlmacenesEditor, AveriasEditor } from '../components/ConfiguracionEditores'
+import { validarConfiguracion } from '../services/configuracion'
 import { getEscenariosActivos, iniciarEscenario, subirArchivoBloqueos, subirArchivoPedidos, ApiError } from '../services/api'
 import type { EscenarioActivoInfo, ParametrosCorrida } from '../types'
+
+const capacidadDe = (p: ParametrosCorrida, tipo: string) => p.configuracion.vehiculos.find((v) => v.tipo === tipo)?.capacidad ?? NaN
 
 export function ParametersPage() {
   const { parametros, setParametros, archivoPedidos, infoArchivoPedidos, archivoBloqueos, infoArchivoBloqueos, setRunId } = useSimulation()
@@ -45,7 +49,12 @@ export function ParametersPage() {
   const thresholdsValid = Number.isFinite(verdeMinPct) && Number.isFinite(ambarMinPct) && ambarMinPct >= 0 && verdeMinPct <= PORCENTAJE_MAXIMO && ambarMinPct < verdeMinPct
   const fleetValid = Object.values(draft.flota).every((n) => Number.isSafeInteger(n) && n >= 0) && total > 0
   const bloqueosValidos = !archivoBloqueos || !!infoArchivoBloqueos?.valido
-  const canStart = (draft.escenario === 'DIARIO' || !!archivoPedidos) && (draft.escenario === 'DIARIO' || !!infoArchivoPedidos?.valido) && bloqueosValidos && thresholdsValid && fleetValid && !!draft.fechaInicio
+  const problemaConfiguracion = validarConfiguracion(draft.configuracion)
+  const canStart = (draft.escenario === 'DIARIO' || !!archivoPedidos) && (draft.escenario === 'DIARIO' || !!infoArchivoPedidos?.valido) && bloqueosValidos && thresholdsValid && fleetValid && !problemaConfiguracion && !!draft.fechaInicio
+
+  function capacidadUnidad(tipo: string, capacidad: number) {
+    setDraft((prev) => ({ ...prev, configuracion: { ...prev.configuracion, vehiculos: prev.configuracion.vehiculos.map((v) => v.tipo === tipo ? { ...v, capacidad } : v) } }))
+  }
 
   function threshold(key: 'verdeMinPct' | 'ambarMinPct', value: number) {
     setDraft((prev) => ({ ...prev, umbralesSemaforo: { ...prev.umbralesSemaforo, [key]: value } }))
@@ -129,14 +138,20 @@ export function ParametersPage() {
         {!thresholdsValid && <p className="validation-error">Usa porcentajes entre 0 y {PORCENTAJE_MAXIMO}, con ámbar menor que verde.</p>}
       </Card>
       <Card title="Flota Disponible" subtitle="Parámetros técnicos y capacidades" icon="truck" tone="purple" badge={`${FLOTA.length} Tipos`}>
-        <div className="table-scroll"><table className="fleet-table"><thead><tr><th>TIPO</th><th>CANT.</th><th>CAPACIDAD</th><th>COSTO/KM</th><th>VEL.</th></tr></thead><tbody>{FLOTA.map((vehicle) => <tr key={vehicle.id}><td><span className="vehicle-dot" style={{ background: vehicle.color }} />{vehicle.nombre}</td><td><input type="number" aria-label={`Cantidad de ${vehicle.nombre}`} min={0} step={1} required value={Number.isNaN(draft.flota[vehicle.id]) ? '' : draft.flota[vehicle.id]} onChange={(event) => setDraft({ ...draft, flota: { ...draft.flota, [vehicle.id]: event.target.valueAsNumber } })} /></td><td>{vehicle.capacidad} paq.</td><td>S/ {vehicle.costoKm.toFixed(2)}</td><td>{vehicle.velocidad} km/h</td></tr>)}</tbody></table></div>
-        <p className="note">ⓘ El tamaño de la flota solo puede modificarse al inicio de la corrida.</p><p className="fleet-total"><span>Flota total configurada</span><strong>{Number.isNaN(total) ? '—' : total} unidades</strong></p>
+        <div className="table-scroll"><table className="fleet-table"><thead><tr><th>TIPO</th><th>CANT.</th><th>CAPACIDAD</th><th>COSTO/KM</th><th>VEL.</th></tr></thead><tbody>{FLOTA.map((vehicle) => <tr key={vehicle.id}><td><span className="vehicle-dot" style={{ background: vehicle.color }} />{vehicle.nombre}</td><td><input type="number" aria-label={`Cantidad de ${vehicle.nombre}`} min={0} step={1} required value={Number.isNaN(draft.flota[vehicle.id]) ? '' : draft.flota[vehicle.id]} onChange={(event) => setDraft({ ...draft, flota: { ...draft.flota, [vehicle.id]: event.target.valueAsNumber } })} /></td><td><input type="number" aria-label={`Capacidad de ${vehicle.nombre}`} min={1} max={1000} step={1} required value={Number.isNaN(capacidadDe(draft, vehicle.id)) ? '' : capacidadDe(draft, vehicle.id)} onChange={(event) => capacidadUnidad(vehicle.id, event.target.valueAsNumber)} /> paq.</td><td>S/ {vehicle.costoKm.toFixed(2)}</td><td>{vehicle.velocidad} km/h</td></tr>)}</tbody></table></div>
+        <p className="note">ⓘ La cantidad de unidades solo se define al inicio de la corrida; la capacidad de cada tipo también se puede cambiar con la corrida en marcha (botón Configuración del mapa).</p><p className="fleet-total"><span>Flota total configurada</span><strong>{Number.isNaN(total) ? '—' : total} unidades</strong></p>
         {!fleetValid && <p className="validation-error">Ingresa cantidades enteras no negativas y al menos una unidad.</p>}
       </Card>
-      <Card title="Red de Almacenes" subtitle="Centros logísticos (solo lectura)" icon="warehouse" tone="teal" badge={`${ALMACENES.length} Nodos`}>
-        <div className="table-scroll"><table className="warehouse-table"><thead><tr><th>ALMACÉN (X, Y)</th><th>CAPACIDAD</th><th>RECARGA</th></tr></thead><tbody>{ALMACENES.map((warehouse) => <tr key={warehouse.id}><td><strong>{warehouse.nombre}</strong><span className="coordinates">({warehouse.x}, {warehouse.y})</span></td><td>{Number.isFinite(warehouse.capacidad) ? warehouse.capacidad.toLocaleString('es-PE') : '∞'}</td><td>{warehouse.recarga}</td></tr>)}</tbody></table></div><p className="fleet-total"><span>Cuadrícula táctica</span><strong>Red {GRID_ANCHO} × {GRID_ALTO} km</strong></p>
+      <Card title="Red de Almacenes" subtitle="Ubicación y capacidad editables" icon="warehouse" tone="teal" badge={`${draft.configuracion.almacenes.length} Nodos`}>
+        <AlmacenesEditor valor={draft.configuracion.almacenes} onChange={(almacenes) => setDraft({ ...draft, configuracion: { ...draft.configuracion, almacenes } })} />
+        <p className="note">ⓘ El central tiene inventario infinito; los intermedios se recargan a las 23:59:59.</p>
+        <p className="fleet-total"><span>Cuadrícula táctica</span><strong>Red {GRID_ANCHO} × {GRID_ALTO} km</strong></p>
       </Card>
     </div>
+    <div className="mt-4"><Card title="Reglas de Avería" subtitle="Atributos de los tipos 1, 2 y 3 (editables)" icon="settings" tone="orange">
+      <AveriasEditor valor={draft.configuracion.averias} onChange={(averias) => setDraft({ ...draft, configuracion: { ...draft.configuracion, averias } })} />
+      {problemaConfiguracion && <p className="validation-error">{problemaConfiguracion}</p>}
+    </Card></div>
     <div className={`start-panel ${selectedActiveRun ? 'active-run-panel' : ''}`}>{selectedActiveRun ? <><button type="button" className="start-button view-run-button" onClick={() => viewRun(selectedActiveRun)}><Icon name="map" />Ver corrida</button><p>Ya hay una corrida de este escenario en curso.</p></> : <><button type="submit" className="start-button" disabled={!canStart || loading}><Icon name="play" />{loading ? 'Iniciando...' : 'Iniciar Corrida'}<Icon name="arrow" /></button><p className={canStart ? 'ready' : ''}>{canStart ? '✓ Con la configuración validada, puedes iniciar la corrida.' : 'Revisa la configuración y el archivo de pedidos para iniciar la corrida.'}</p></>}</div>
   </form>
 }

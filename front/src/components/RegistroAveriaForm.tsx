@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { NOMBRES_AVERIA, NOMBRES_TIPO } from '../config/theme'
+import { NOMBRES_AVERIA, NOMBRES_TIPO, REGLAS_AVERIA } from '../config/theme'
 import { registrarAveria, type AveriaRegistrada } from '../services/api'
 import { readableSimTime } from '../services/simulationTime'
 import type { VehiculoSnap } from '../types/snapshot'
@@ -37,11 +37,11 @@ export function RegistroAveriaForm({ runId, vehiculos, disponible }: Props) {
           {operativos.map((v) => <option key={v.id} value={v.id}>{v.id} — {NOMBRES_TIPO[v.tipo]} · {v.estado === 'LIBRE' ? 'en almacén' : v.estado.toLowerCase().replace('_', ' ')}</option>)}
         </select></label>
         <label className="register-field">Tipo de avería<select value={tipo} onChange={(e) => setTipo(Number(e.target.value) as 1 | 2 | 3)}>{([1, 2, 3] as const).map((t) => <option key={t} value={t}>{NOMBRES_AVERIA[t]}</option>)}</select></label>
-        <p className="breakdown-note">La unidad se detiene donde está y sus pedidos pendientes se reasignan de inmediato. En tipo 2 y 3 se remolca al Almacén Central tras 4 h.</p>
+        <p className="breakdown-note"><strong>Ocurrencia y ubicación:</strong> el momento simulado actual y el lugar donde está la unidad; sus pedidos pendientes se reasignan de inmediato.<br /><strong>Tipo {tipo}:</strong> {REGLAS_AVERIA[tipo]}</p>
         <button className="register-submit danger" type="submit" disabled={!disponible || enviando || !vehiculoId}><Icon name="check" />{enviando ? 'Registrando…' : 'Registrar avería'}</button>
       </fieldset>
       {error && <p className="register-error" role="alert">{error}</p>}
-      {confirmacion && <div className="register-success" role="status"><strong>✓ Avería de {confirmacion.vehiculoId} registrada</strong><span>{confirmacion.pedidosReasignados} pedido(s) en reasignación · disponible {readableSimTime(confirmacion.hasta)}</span></div>}
+      {confirmacion && <div className="register-success" role="status"><strong>✓ Avería {confirmacion.id} de {confirmacion.vehiculoId} registrada</strong><span>Ocurrencia: {readableSimTime(confirmacion.ocurrencia)} · Fin: {readableSimTime(confirmacion.fin)} ({confirmacion.duracionHoras.toLocaleString('es-PE', { maximumFractionDigits: 1 })} h)</span><span>Ubicación: ({confirmacion.x}, {confirmacion.y}) · {confirmacion.pedidosReasignados} pedido(s) en reasignación</span></div>}
     </form>
     <section className="recent-orders" aria-label="Averías activas"><div><h3>Averías activas</h3><span>Total: {averiados.length}</span></div>
       {averiados.length ? <ol>{averiados.map((v) => <li key={v.id} className="breakdown-item"><div><strong>{v.id}</strong><span>Tipo {v.averia?.tipo}</span></div><p>{v.averia?.remolcado ? 'Remolcada al Almacén Central' : 'Detenida en (' + Math.round(v.x) + ', ' + Math.round(v.y) + ')'} · disponible {v.averia ? readableSimTime(v.averia.hasta) : '—'}</p></li>)}</ol> : <p className="recent-empty">Sin averías activas.</p>}

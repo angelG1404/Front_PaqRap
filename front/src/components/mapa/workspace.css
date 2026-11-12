@@ -97,3 +97,22 @@
 @media (max-height: 650px) {
   .map-workspace > main { overflow: auto; }.map-page { min-height: 600px; }
 }
+/* Actividad de almacenes (últimas horas) e incidencias con atributos completos */
+.warehouse-activity-line { display: block; color: #35506f; font-size: 11px; }.warehouse-activity-line small { color: #7a8ca3; }
+.warehouse-window { margin: 2px 0 10px; color: #64748b; font-size: 11px; }
+.warehouse-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+.warehouse-kpis > div { padding: 8px; border: 1px solid #d8e2ee; border-radius: 6px; background: #fff; text-align: center; }
+.warehouse-kpis b { display: block; color: #123b62; font-size: 18px; }.warehouse-kpis span { color: #64748b; font-size: 10px; line-height: 1.4; }
+.warehouse-views, .incident-filters { display: flex; gap: 4px; margin-bottom: 10px; }
+.incident-filters { padding: 10px 16px 0; margin: 0; }
+.warehouse-views button, .incident-filters button { flex: 1; padding: 5px 6px; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; color: #44596f; font-size: 11px; }
+.warehouse-views button[aria-pressed=true], .incident-filters button[aria-pressed=true] { background: #123b62; border-color: #123b62; color: #fff; }
+.workspace-map .warehouse-order { display: grid; gap: 2px; padding: 8px 10px; margin-bottom: 6px; border: 1px solid #dbe5f0; border-radius: 6px; background: #fff; font-size: 11px; }
+.warehouse-order span { color: #5b6f86; }
+.incident-row.resolved { opacity: .78; background: #fafbfd; }.incident-row .incident-rule { color: #8a5a00; }
+.incident-state { padding: 1px 6px; border-radius: 9px; font-size: 10px; }.incident-state.active { background: #fde3e6; color: #b3192d; }.incident-state.done { background: #e0f4ea; color: #0b7a54; }
+/* Orden de la lista de unidades por nivel de ocupación */
+.sort-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; padding: 8px 16px; border-bottom: 1px solid #e2e8f0; background: #fff; }
+.sort-bar > span { width: 100%; color: #64748b; font-size: 10px; font-weight: 600; }
+.sort-bar button { flex: 1; padding: 4px 6px; border: 1px solid #cbd5e1; border-radius: 5px; background: #fff; color: #44596f; font-size: 11px; white-space: nowrap; }
+.sort-bar button[aria-pressed=true] { background: #123b62; border-color: #123b62; color: #fff; }

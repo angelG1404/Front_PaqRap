@@ -15,6 +15,8 @@ public final class ScenarioDefaults {
 
     public static final int CAPACIDAD_INTERMEDIO = 1000;
     public static final double HORIZONTE_5D_HORAS = 120.0;
+    /** Ventana (horas simuladas) de la actividad reciente de un almacén: envíos y paquetes entregados. */
+    public static final double VENTANA_ACTIVIDAD_HORAS = 4.0;
     public static final double VERDE_MIN_PCT = 60.0;
     public static final double AMBAR_MIN_PCT = 30.0;
 

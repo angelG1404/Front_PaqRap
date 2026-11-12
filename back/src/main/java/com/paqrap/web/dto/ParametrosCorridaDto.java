@@ -8,6 +8,8 @@ public class ParametrosCorridaDto {
     private String archivoPedidosId;
     private String archivoBloqueosId;
     private Map<String, Integer> flota;
+    /** Reglas de avería, almacenes y capacidades de unidad; opcional y parcial (lo omitido usa los valores por defecto). */
+    private com.paqrap.config.ConfiguracionCorrida configuracion;
     private Map<String, Double> umbralesSemaforo;
 
     public ParametrosCorridaDto() {}
@@ -23,6 +25,9 @@ public class ParametrosCorridaDto {
 
     public String getArchivoBloqueosId() { return archivoBloqueosId; }
     public void setArchivoBloqueosId(String archivoBloqueosId) { this.archivoBloqueosId = archivoBloqueosId; }
+
+    public com.paqrap.config.ConfiguracionCorrida getConfiguracion() { return configuracion; }
+    public void setConfiguracion(com.paqrap.config.ConfiguracionCorrida configuracion) { this.configuracion = configuracion; }
 
     public Map<String, Integer> getFlota() { return flota; }
     public void setFlota(Map<String, Integer> flota) { this.flota = flota; }

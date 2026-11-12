@@ -8,6 +8,7 @@ import { createSource } from '../services/createSource'
 import { detenerCorrida, getEscenariosActivos, USE_MOCK } from '../services/api'
 import { readableSimTime } from '../services/simulationTime'
 import { MapPageHeader } from './MapPageHeader'
+import { BotonConfiguracion } from '../components/ConfiguracionCorridaModal'
 import type { EscenarioActivoInfo } from '../types'
 import './operacion-diaria.css'
 
@@ -66,7 +67,7 @@ export function SimulationMapPage() {
   const resumen = snapshot?.resumen
 
   return <div className="map-page">
-    <MapPageHeader snapshot={snapshot} escenario={selectedRun.escenario} onDetener={USE_MOCK ? undefined : detener} deteniendo={deteniendo} />
+    <MapPageHeader snapshot={snapshot} escenario={selectedRun.escenario} onDetener={USE_MOCK ? undefined : detener} deteniendo={deteniendo} acciones={!USE_MOCK && !terminado ? <BotonConfiguracion runId={selectedRun.runId} /> : undefined} />
 
     {activeRuns.length > 1 && <div className="bg-blue-50 border border-blue-200 p-3 mx-6 mt-4 rounded-lg flex items-center justify-between">
       <span className="font-semibold text-blue-900">Múltiples simulaciones en curso:</span>

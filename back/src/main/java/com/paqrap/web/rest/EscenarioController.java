@@ -1,5 +1,7 @@
 package com.paqrap.web.rest;
 
+import com.paqrap.config.ConfiguracionCorrida;
+import com.paqrap.config.ScenarioDefaults;
 import com.paqrap.ingesta.ArchivoBloqueosStore;
 import com.paqrap.ingesta.ArchivoPedidosStore;
 import com.paqrap.model.Order;
@@ -91,6 +93,56 @@ public class EscenarioController {
         } catch (Exception e) {
             return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Avería inválida: " + e.getMessage());
         }
+    }
+
+    /**
+     * Actividad de un almacén en las últimas {@code horas} horas simuladas (por defecto 4): envíos despachados,
+     * paquetes entregados y lo que sigue en tránsito, con el detalle de cada pedido.
+     */
+    @GetMapping("/{runId}/almacenes/{almacenId}/actividad")
+    public ResponseEntity<?> actividadAlmacen(@PathVariable String runId, @PathVariable String almacenId,
+                                              @RequestParam(value = "horas", required = false) Double horas) {
+        Corrida c = scenarioRunner.getByRunId(runId);
+        if (c == null) return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Corrida no encontrada");
+        double ventana = horas == null ? ScenarioDefaults.VENTANA_ACTIVIDAD_HORAS : horas;
+        if (!(ventana > 0 && ventana <= 72)) return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "La ventana debe estar entre 0 y 72 horas.");
+        try {
+            return ResponseEntity.ok(c.getMotor().actividadAlmacen(almacenId, ventana));
+        } catch (NoSuchElementException e) {
+            return error(HttpStatus.NOT_FOUND, "NOT_FOUND", e.getMessage());
+        }
+    }
+
+    /** Configuración vigente de la corrida: reglas de avería, almacenes y capacidades de unidad. */
+    @GetMapping("/{runId}/configuracion")
+    public ResponseEntity<?> getConfiguracion(@PathVariable String runId) {
+        Corrida c = scenarioRunner.getByRunId(runId);
+        if (c == null) return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Corrida no encontrada");
+        return ResponseEntity.ok(c.getMotor().configuracion());
+    }
+
+    /**
+     * Modifica la configuración de una corrida en curso. El cuerpo es parcial: solo se cambia lo que se envía.
+     * Devuelve la configuración resultante; 400 si algún valor está fuera de rango.
+     */
+    @PutMapping("/{runId}/configuracion")
+    public ResponseEntity<?> actualizarConfiguracion(@PathVariable String runId, @RequestBody ConfiguracionCorrida parcial) {
+        Corrida c = scenarioRunner.getByRunId(runId);
+        if (c == null) return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Corrida no encontrada");
+        if (!c.getMotor().enCurso()) return error(HttpStatus.CONFLICT, "CONFLICT", "La corrida ya terminó.");
+        try {
+            return ResponseEntity.ok(c.getMotor().aplicarConfiguracion(parcial));
+        } catch (IllegalArgumentException e) {
+            return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", e.getMessage());
+        }
+    }
+
+    /** Lista de averías de la corrida (activas y resueltas), de la más reciente a la más antigua. */
+    @GetMapping("/{runId}/averias")
+    public ResponseEntity<?> listarAverias(@PathVariable String runId) {
+        Corrida c = scenarioRunner.getByRunId(runId);
+        if (c == null) return error(HttpStatus.NOT_FOUND, "NOT_FOUND", "Corrida no encontrada");
+        return ResponseEntity.ok(c.getMotor().listarAverias());
     }
 
     /** Carga un archivo de bloqueos en una corrida en curso (tiempos relativos al día 01 de la corrida). */
